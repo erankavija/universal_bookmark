@@ -1,0 +1,29 @@
+#!/bin/bash
+# Example hook that runs after deleting a bookmark
+# Place this file in $BOOKMARKS_DIR/hooks/ and rename it to after_delete.sh
+
+# Arguments provided by the bookmark script:
+# $1 - Bookmarks directory
+# $2 - Bookmarks file path
+
+BOOKMARKS_DIR="$1"
+BOOKMARKS_FILE="$2"
+
+# Get the current date and time
+DATE=$(date +"%Y-%m-%d %H:%M:%S")
+
+# Log the deletion to a log file
+echo "[$DATE] Bookmark deleted" >> "$BOOKMARKS_DIR/bookmark_activity.log"
+
+# Example: Count the number of bookmarks
+BOOKMARK_COUNT=$(jq '.bookmarks | length' "$BOOKMARKS_FILE")
+echo "[$DATE] Total bookmarks: $BOOKMARK_COUNT" >> "$BOOKMARKS_DIR/bookmark_activity.log"
+
+# Example: Create an automatic backup after deletion
+BACKUP_DIR="$BOOKMARKS_DIR/backups"
+mkdir -p "$BACKUP_DIR"
+BACKUP_FILE="$BACKUP_DIR/auto_backup_after_delete_$(date +%Y%m%d_%H%M%S).json"
+cp "$BOOKMARKS_FILE" "$BACKUP_FILE"
+echo "[$DATE] Auto-backup created: $BACKUP_FILE" >> "$BOOKMARKS_DIR/bookmark_activity.log"
+
+echo "Bookmark delete hook executed successfully"

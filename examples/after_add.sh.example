@@ -1,0 +1,34 @@
+#!/bin/bash
+# Example hook that runs after adding a bookmark
+# Place this file in $BOOKMARKS_DIR/hooks/ and rename it to after_add.sh
+
+# Arguments provided by the bookmark script:
+# $1 - Bookmarks directory
+# $2 - Bookmarks file path
+
+BOOKMARKS_DIR="$1"
+BOOKMARKS_FILE="$2"
+
+# Get the current date and time
+DATE=$(date +"%Y-%m-%d %H:%M:%S")
+
+# Log the addition to a log file
+echo "[$DATE] New bookmark added" >> "$BOOKMARKS_DIR/bookmark_activity.log"
+
+# Example: Count the number of bookmarks
+BOOKMARK_COUNT=$(jq '.bookmarks | length' "$BOOKMARKS_FILE")
+echo "[$DATE] Total bookmarks: $BOOKMARK_COUNT" >> "$BOOKMARKS_DIR/bookmark_activity.log"
+
+# Example: Send a notification (if notify-send is available)
+if command -v notify-send &> /dev/null; then
+    notify-send "Universal Bookmarks" "New bookmark added! Total: $BOOKMARK_COUNT"
+fi
+
+# Example: Sync bookmarks to another location (e.g., cloud storage)
+# Uncomment and modify if you want to use this feature
+# if [ -d "$HOME/Dropbox" ]; then
+#     cp "$BOOKMARKS_FILE" "$HOME/Dropbox/bookmarks_backup.json"
+#     echo "[$DATE] Bookmarks synced to Dropbox" >> "$BOOKMARKS_DIR/bookmark_activity.log"
+# fi
+
+echo "Bookmark add hook executed successfully"
