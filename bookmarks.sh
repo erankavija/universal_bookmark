@@ -416,7 +416,7 @@ list_bookmarks() {
     
     if [ -n "$selected" ]; then
         # Extract the description
-        local description=$(echo "$selected" | sed -E 's/\x1B\[[0-9;]*[mK]//g' | sed -E 's/^\[OBSOLETE\] \[(.*)\] (.*)/\2/')
+        local description=$(echo "$selected" | sed -E 's/\x1B\[[0-9;]*[mK]//g' | sed -E 's/^\[OBSOLETE\] \[(.*)\] (.*)/\2/' | sed -E 's/^\[(.*)\] (.*)/\2/')
         
         # Find the command in the JSON
         local command=$(jq -r --arg desc "$description" '.bookmarks[] | select(.description == $desc) | .command' "$BOOKMARKS_FILE")
