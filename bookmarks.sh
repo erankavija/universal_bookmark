@@ -12,6 +12,9 @@ PURPLE='\033[0;35m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Non-interactive mode flag
+NON_INTERACTIVE=false
+
 # Check if BOOKMARKS_DIR is set
 if [ -z "$BOOKMARKS_DIR" ]; then
     echo -e "${RED}Error: BOOKMARKS_DIR environment variable not set.${NC}"
@@ -92,7 +95,12 @@ add_bookmark() {
     if ! is_valid_type "$type"; then
         echo -e "${RED}Error: Invalid bookmark type: $type${NC}"
         echo -e "Valid types: ${CYAN}${VALID_TYPES[*]}${NC}"
-        read -p "Do you want to continue with a custom type? (y/n): " response
+        
+        local response="y"
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Do you want to continue with a custom type? (y/n): " response
+        fi
+        
         if [[ ! "$response" =~ ^[Yy]$ ]]; then
             exit 1
         fi
@@ -108,7 +116,12 @@ add_bookmark() {
     
     if [ -n "$exists" ]; then
         echo -e "${YELLOW}A bookmark with description '$description' already exists.${NC}"
-        read -p "Do you want to update it? (y/n): " update
+        
+        local update="y"
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Do you want to update it? (y/n): " update
+        fi
+        
         if [[ "$update" =~ ^[Yy]$ ]]; then
             update_bookmark "$description" "$type" "$command" "$tags" "$notes"
             return
@@ -230,7 +243,12 @@ edit_bookmark() {
     if ! is_valid_type "$new_type"; then
         echo -e "${YELLOW}Warning: '$new_type' is not in the list of standard types.${NC}"
         echo -e "Standard types: ${CYAN}${VALID_TYPES[*]}${NC}"
-        read -p "Do you want to continue with this custom type? (y/n): " response
+        
+        local response="y"
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Do you want to continue with this custom type? (y/n): " response
+        fi
+        
         if [[ ! "$response" =~ ^[Yy]$ ]]; then
             echo -e "${YELLOW}Operation cancelled.${NC}"
             exit 0
@@ -276,7 +294,11 @@ delete_bookmark() {
     local description=$(echo "$bookmark" | jq -r '.description')
     
     echo -e "${YELLOW}You are about to delete the bookmark: ${CYAN}$description${NC}"
-    read -p "Are you sure? (y/n): " confirmation
+    
+    local confirmation="y"
+    if [ "$NON_INTERACTIVE" = false ]; then
+        read -p "Are you sure? (y/n): " confirmation
+    fi
     
     if [[ "$confirmation" =~ ^[Yy]$ ]]; then
         if [[ "$id_or_desc" == *"_"* ]]; then
@@ -319,7 +341,11 @@ obsolete_bookmark() {
     
     if [ "$status" = "obsolete" ]; then
         echo -e "${YELLOW}This bookmark is already marked as obsolete: ${CYAN}$description${NC}"
-        read -p "Do you want to restore it to active status? (y/n): " restore
+        
+        local restore="y"
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Do you want to restore it to active status? (y/n): " restore
+        fi
         
         if [[ "$restore" =~ ^[Yy]$ ]]; then
             local new_status="active"
@@ -330,7 +356,11 @@ obsolete_bookmark() {
         fi
     else
         echo -e "${YELLOW}You are about to mark the bookmark as obsolete: ${CYAN}$description${NC}"
-        read -p "Continue? (y/n): " confirmation
+        
+        local confirmation="y"
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Continue? (y/n): " confirmation
+        fi
         
         if [[ "$confirmation" =~ ^[Yy]$ ]]; then
             local new_status="obsolete"
@@ -396,7 +426,12 @@ list_bookmarks() {
         
         if [ "$status" = "obsolete" ]; then
             echo -e "${YELLOW}Warning: This bookmark is marked as obsolete.${NC}"
-            read -p "Do you still want to execute it? (y/n): " confirm
+            
+            local confirm="y"
+            if [ "$NON_INTERACTIVE" = false ]; then
+                read -p "Do you still want to execute it? (y/n): " confirm
+            fi
+            
             if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
                 return
             fi
@@ -483,7 +518,11 @@ import_legacy_bookmarks() {
     
     echo -e "${YELLOW}Importing bookmarks from: $legacy_file${NC}"
     echo -e "${YELLOW}This will merge with your existing JSON bookmarks.${NC}"
-    read -p "Continue? (y/n): " confirm
+    
+    local confirm="y"
+    if [ "$NON_INTERACTIVE" = false ]; then
+        read -p "Continue? (y/n): " confirm
+    fi
     
     if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
         echo -e "${YELLOW}Import cancelled.${NC}"
@@ -591,14 +630,21 @@ restore_from_backup() {
         i=$((i+1))
     done
     
-    read -p "Enter backup number to restore (0 to cancel): " selection
+    local selection="1"
+    if [ "$NON_INTERACTIVE" = false ]; then
+        read -p "Enter backup number to restore (0 to cancel): " selection
+    fi
     
     if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le ${#backups[@]} ]; then
         local selected_backup="${backups[$((selection-1))]}"
         
         echo -e "${YELLOW}You are about to restore from: ${CYAN}$(basename "$selected_backup")${NC}"
         echo -e "${RED}This will overwrite your current bookmarks!${NC}"
-        read -p "Continue? (y/n): " confirm
+        
+        local confirm="y"
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Continue? (y/n): " confirm
+        fi
         
         if [[ "$confirm" =~ ^[Yy]$ ]]; then
             cp "$selected_backup" "$BOOKMARKS_FILE"
@@ -675,6 +721,20 @@ EOF
 fi
 
 # Main command handling
+# Parse flags
+while [[ "$1" == -* ]]; do
+    case "$1" in
+        -y|--yes)
+            NON_INTERACTIVE=true
+            shift
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            exit 1
+            ;;
+    esac
+done
+
 case "$1" in
     "add")
         if [ $# -lt 4 ]; then
