@@ -11,7 +11,6 @@ Shell script to manage bookmarks in a JSON format. A bookmark can be anything fr
 - **Backup & Restore**: Built-in backup/restore functionality
 - **Hooks**: Custom extensibility with hook scripts
 - **Cross-Shell Compatible**: Works with Bash, Zsh, Fish, and others
-- **Import/Export**: Migrate between legacy and JSON formats
 
 A bookmark is stored in a JSON file with fields for ID, description, type, command, tags, notes, created date, and status. This provides much more flexibility and robustness compared to simple text files.
 
@@ -60,7 +59,6 @@ The setup script will:
 - Add the `BOOKMARKS_DIR` environment variable to your shell configuration file
 - Add an alias `bookmark` for the bookmarks.sh script
 - Create example hook scripts
-- Import existing bookmarks from legacy format if found
 - Provide instructions for using the system
 
 After running the setup script, restart your shell or run `source ~/.zshrc` (or the appropriate configuration file for your shell).
@@ -90,14 +88,6 @@ If you prefer a manual setup:
    echo 'alias bookmark="/path/to/bookmarks.sh"' >> ~/.zshrc
    ```
    (Replace `~/.zshrc` with your shell's configuration file if different)
-
-### Migrating from Older Versions
-
-If you have a previous installation with a tab-delimited `bookmarks.txt` file, you can import it:
-
-```bash
-bookmark import "/path/to/bookmarks.txt"
-```
 
 ## Usage
 
@@ -172,18 +162,6 @@ bookmark backup
 Restore from a previous backup:
 ```bash
 bookmark restore
-```
-
-#### Import/Export
-
-Import from legacy format:
-```bash
-bookmark import "/path/to/bookmarks.txt"
-```
-
-Export to legacy format:
-```bash
-bookmark export
 ```
 
 ### Using IDs

@@ -108,10 +108,6 @@ run_test_suite() {
     run_test "Create backup" \
         "./bookmarks.sh -y backup"
     
-    # Test exporting bookmarks
-    run_test "Export bookmarks" \
-        "./bookmarks.sh -y export"
-    
     # Test deleting a bookmark
     run_test "Delete a bookmark" \
         "./bookmarks.sh -y delete 'Test URL'"
