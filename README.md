@@ -104,6 +104,15 @@ After setup, you can use either the `bookmark` command (if you used the setup sc
 
 #### Adding Bookmarks
 
+You can add bookmarks in two ways:
+
+**Interactive Mode** (no arguments):
+```bash
+bookmark add
+```
+This will prompt you for each field (description, type, command, tags, notes).
+
+**Direct Mode** (with arguments):
 ```bash
 bookmark add "Description" type "command" [tags] [notes]
 ```

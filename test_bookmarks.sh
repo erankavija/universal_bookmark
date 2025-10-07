@@ -179,6 +179,56 @@ run_test_suite() {
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     fi
     
+    # Test interactive add mode
+    echo -e "${BLUE}Testing interactive add mode...${NC}"
+    # Simulate interactive input using a here-doc
+    {
+        echo "Interactive Test Bookmark"
+        echo "url"
+        echo "echo 'Interactive test'"
+        echo "interactive test"
+        echo "This is an interactive test"
+    } | ./bookmarks.sh add > /dev/null 2>&1
+    
+    # Verify the bookmark was added
+    local interactive_bookmark=$(jq -r '.bookmarks[] | select(.description == "Interactive Test Bookmark") | .command' "$TEST_BOOKMARKS_FILE")
+    
+    if [ "$interactive_bookmark" = "echo 'Interactive test'" ]; then
+        echo -e "${GREEN}✓ Test passed: Interactive add mode${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: Interactive add mode did not add bookmark correctly${NC}"
+        echo -e "  Expected: echo 'Interactive test'"
+        echo -e "  Got: $interactive_bookmark"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test interactive add with custom type confirmation
+    echo -e "${BLUE}Testing interactive add mode with custom type (auto-confirmed)...${NC}"
+    {
+        echo "Custom Type Test"
+        echo "customtype"
+        echo "y"
+        echo "echo 'Custom type test'"
+        echo ""
+        echo ""
+    } | ./bookmarks.sh add > /dev/null 2>&1
+    
+    # Verify the bookmark was added with custom type
+    local custom_type_bookmark=$(jq -r '.bookmarks[] | select(.description == "Custom Type Test") | .type' "$TEST_BOOKMARKS_FILE")
+    
+    if [ "$custom_type_bookmark" = "customtype" ]; then
+        echo -e "${GREEN}✓ Test passed: Interactive add with custom type${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: Interactive add with custom type did not work correctly${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
     # Summary
     echo -e "${BLUE}Test summary:${NC}"
     echo -e "  ${GREEN}Tests passed: $TESTS_PASSED${NC}"

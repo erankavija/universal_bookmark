@@ -153,6 +153,61 @@ add_bookmark() {
     echo -e "${GREEN}Bookmark added: ${CYAN}$description${NC}"
 }
 
+# Add a new bookmark interactively
+interactive_add_bookmark() {
+    echo -e "${BLUE}Adding a new bookmark interactively${NC}"
+    echo ""
+    
+    # Prompt for description
+    read -p "Description: " description
+    while [ -z "$description" ]; do
+        echo -e "${RED}Description cannot be empty.${NC}"
+        read -p "Description: " description
+    done
+    
+    # Prompt for type
+    echo -e "${CYAN}Valid types: ${VALID_TYPES[*]}${NC}"
+    read -p "Type: " type
+    while [ -z "$type" ]; do
+        echo -e "${RED}Type cannot be empty.${NC}"
+        read -p "Type: " type
+    done
+    
+    # Validate type or confirm custom type
+    if ! is_valid_type "$type"; then
+        echo -e "${YELLOW}Warning: '$type' is not in the list of standard types.${NC}"
+        echo -e "Standard types: ${CYAN}${VALID_TYPES[*]}${NC}"
+        
+        local response
+        read -p "Do you want to continue with this custom type? (y/n): " response
+        
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            echo -e "${YELLOW}Operation cancelled.${NC}"
+            exit 0
+        fi
+    fi
+    
+    # Prompt for command
+    read -p "Command: " command
+    while [ -z "$command" ]; do
+        echo -e "${RED}Command cannot be empty.${NC}"
+        read -p "Command: " command
+    done
+    
+    # Prompt for tags (optional)
+    read -p "Tags (optional): " tags
+    
+    # Prompt for notes (optional)
+    read -p "Notes (optional): " notes
+    
+    # Call the regular add_bookmark function with the collected inputs
+    # Set NON_INTERACTIVE temporarily since we've already handled user interaction
+    local saved_non_interactive="$NON_INTERACTIVE"
+    NON_INTERACTIVE=true
+    add_bookmark "$description" "$type" "$command" "$tags" "$notes"
+    NON_INTERACTIVE="$saved_non_interactive"
+}
+
 # Update an existing bookmark
 update_bookmark() {
     local description="$1"
@@ -594,6 +649,7 @@ show_help() {
     echo ""
     echo -e "${GREEN}Usage:${NC}"
     echo "  $0 add \"Description\" type \"command\" [tags] [notes]   # Add a new bookmark"
+    echo "  $0 add                                       # Add a bookmark interactively"
     echo "  $0 edit \"Description or ID\"                      # Edit a bookmark interactively"
     echo "  $0 update \"Description\" type \"command\" [tags] [notes] # Update a bookmark"
     echo "  $0 delete \"Description or ID\"                    # Delete a bookmark"
@@ -655,11 +711,17 @@ done
 
 case "$1" in
     "add")
-        if [ $# -lt 4 ]; then
+        if [ $# -eq 1 ]; then
+            # No arguments provided, run interactively
+            interactive_add_bookmark
+        elif [ $# -lt 4 ]; then
             echo -e "${RED}Usage: $0 add \"Description\" type \"command\" [tags] [notes]${NC}"
+            echo -e "${BLUE}Or run '$0 add' with no arguments for interactive mode${NC}"
             exit 1
+        else
+            # Arguments provided, use non-interactive mode
+            add_bookmark "$2" "$3" "$4" "${5:-}" "${6:-}"
         fi
-        add_bookmark "$2" "$3" "$4" "${5:-}" "${6:-}"
         run_hook "after_add"
         ;;
     "edit")
