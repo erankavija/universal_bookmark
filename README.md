@@ -179,18 +179,42 @@ This is useful when you have multiple bookmarks with similar descriptions.
 
 The system supports these standard bookmark types, but you can define custom types as needed:
 
-| Type | Description | Example Command |
-|------|-------------|----------------|
-| `url` | Web URLs | `xdg-open "https://chat.openai.com/"` |
-| `pdf` | PDF documents | `xdg-open "$BOOKMARKS_DIR/documents/paper.pdf"` |
-| `script` | Executable scripts | `"$BOOKMARKS_DIR/scripts/backup.sh"` |
-| `ssh` | SSH connections | `ssh user@homeserver.local` |
-| `app` | Application launchers | `code /path/to/project` |
-| `cmd` | Custom commands | `curl wttr.in` |
-| `note` | Notes or text files | `less "$BOOKMARKS_DIR/notes/research.txt"` |
-| `folder` | Directory shortcuts | `xdg-open "$HOME/Projects"` |
-| `file` | File shortcuts | `xdg-open "$HOME/Documents/report.docx"` |
-| `custom` | Any other type | *(your custom command)* |
+| Type | Description | Example Command | Execution Method |
+|------|-------------|----------------|------------------|
+| `url` | Web URLs | `"https://chat.openai.com/"` | System default opener (`xdg-open`/`open`) |
+| `pdf` | PDF documents | `"$BOOKMARKS_DIR/documents/paper.pdf"` | System default opener (`xdg-open`/`open`) |
+| `script` | Executable scripts | `"$BOOKMARKS_DIR/scripts/backup.sh"` | Direct shell execution |
+| `ssh` | SSH connections | `ssh user@homeserver.local` | Direct shell execution |
+| `app` | Application launchers | `code /path/to/project` | Direct shell execution |
+| `cmd` | Custom commands | `curl wttr.in` | Direct shell execution |
+| `note` | Notes or text files | `"$BOOKMARKS_DIR/notes/research.txt"` | System default opener or `less` |
+| `folder` | Directory shortcuts | `"$HOME/Projects"` | System default opener (`xdg-open`/`open`) |
+| `file` | File shortcuts | `"$HOME/Documents/report.docx"` | System default opener (`xdg-open`/`open`) |
+| `custom` | Any other type | *(your custom command)* | Direct shell execution |
+
+### Type-Specific Execution
+
+The bookmark system uses intelligent, type-aware execution:
+
+- **File-based types** (`url`, `pdf`, `folder`, `file`): Opened with your system's default application using `xdg-open` (Linux), `open` (macOS), or `start` (Windows/WSL). Just store the path or URL without wrapping it in `xdg-open`.
+
+  Example:
+  ```bash
+  bookmark add "ChatGPT" url '"https://chat.openai.com/"'
+  bookmark add "Project Folder" folder '"$HOME/Projects"'
+  ```
+
+- **Executable types** (`script`, `ssh`, `app`, `cmd`, `custom`): Executed directly in the shell, allowing for complex commands, pipes, and shell features.
+
+  Example:
+  ```bash
+  bookmark add "Weather" cmd 'curl wttr.in'
+  bookmark add "Server" ssh 'ssh user@server.com'
+  ```
+
+- **Note type**: Attempts to use the system default opener first, falls back to `less` or `cat` for terminal viewing.
+
+This approach provides a more systematic and cross-platform compatible way to handle different bookmark types compared to requiring manual `xdg-open` commands.
 
 ## Hook Scripts
 

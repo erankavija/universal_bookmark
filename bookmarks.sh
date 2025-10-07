@@ -386,6 +386,51 @@ obsolete_bookmark() {
     echo -e "${GREEN}Bookmark $message: ${CYAN}$description${NC}"
 }
 
+# Execute a bookmark command based on its type
+execute_bookmark_by_type() {
+    local type="$1"
+    local command="$2"
+    local description="$3"
+    
+    # Detect the OS for cross-platform compatibility
+    local open_cmd=""
+    if command -v xdg-open &> /dev/null; then
+        open_cmd="xdg-open"
+    elif command -v open &> /dev/null; then
+        open_cmd="open"  # macOS
+    elif command -v start &> /dev/null; then
+        open_cmd="start"  # Windows/WSL
+    fi
+    
+    case "$type" in
+        url|pdf|folder|file)
+            # Use system's default opener for these types
+            if [ -n "$open_cmd" ]; then
+                echo -e "${GREEN}Opening with $open_cmd: ${CYAN}$description${NC}"
+                eval "$open_cmd $command"
+            else
+                echo -e "${YELLOW}Warning: No system opener found (xdg-open, open, or start)${NC}"
+                echo -e "${BLUE}Falling back to direct execution${NC}"
+                eval "$command"
+            fi
+            ;;
+        note)
+            # For notes, try to open with system default or fall back to less/cat
+            if [ -n "$open_cmd" ]; then
+                eval "$open_cmd $command"
+            elif command -v less &> /dev/null; then
+                eval "less $command"
+            else
+                eval "cat $command"
+            fi
+            ;;
+        script|ssh|app|cmd|custom|*)
+            # Direct execution for scripts, SSH connections, apps, commands, and custom types
+            eval "$command"
+            ;;
+    esac
+}
+
 # List all bookmarks with fuzzy search
 list_bookmarks() {
     local search_term="$1"
@@ -418,11 +463,11 @@ list_bookmarks() {
         # Extract the description
         local description=$(echo "$selected" | sed -E 's/\x1B\[[0-9;]*[mK]//g' | sed -E 's/^\[OBSOLETE\] \[(.*)\] (.*)/\2/' | sed -E 's/^\[(.*)\] (.*)/\2/')
         
-        # Find the command in the JSON
-        local command=$(jq -r --arg desc "$description" '.bookmarks[] | select(.description == $desc) | .command' "$BOOKMARKS_FILE")
-        
-        # Check if the bookmark is obsolete
-        local status=$(jq -r --arg desc "$description" '.bookmarks[] | select(.description == $desc) | .status' "$BOOKMARKS_FILE")
+        # Find the command and type in the JSON
+        local bookmark=$(jq -r --arg desc "$description" '.bookmarks[] | select(.description == $desc)' "$BOOKMARKS_FILE")
+        local command=$(echo "$bookmark" | jq -r '.command')
+        local type=$(echo "$bookmark" | jq -r '.type')
+        local status=$(echo "$bookmark" | jq -r '.status')
         
         if [ "$status" = "obsolete" ]; then
             echo -e "${YELLOW}Warning: This bookmark is marked as obsolete.${NC}"
@@ -438,10 +483,11 @@ list_bookmarks() {
         fi
         
         echo -e "${GREEN}Executing: ${CYAN}$description${NC}"
+        echo -e "${BLUE}Type: ${NC}$type"
         echo -e "${BLUE}Command: ${NC}$command"
         
-        # Execute the command
-        eval "$command"
+        # Execute the command based on bookmark type
+        execute_bookmark_by_type "$type" "$command" "$description"
     fi
 }
 
