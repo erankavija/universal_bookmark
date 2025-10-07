@@ -1,0 +1,33 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y jq
+        
+    - name: Install fzf
+      run: |
+        git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+        ~/.fzf/install --bin
+        echo "$HOME/.fzf/bin" >> $GITHUB_PATH
+        
+    - name: Make scripts executable
+      run: |
+        chmod +x test_bookmarks.sh bookmarks.sh
+        
+    - name: Run tests
+      run: ./test_bookmarks.sh
