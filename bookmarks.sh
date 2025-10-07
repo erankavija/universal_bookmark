@@ -507,87 +507,7 @@ search_by_tag() {
     done
 }
 
-# Import bookmarks from legacy format (tab-delimited txt file)
-import_legacy_bookmarks() {
-    local legacy_file="$1"
-    
-    if [ ! -f "$legacy_file" ]; then
-        echo -e "${RED}Error: Legacy file not found: $legacy_file${NC}"
-        exit 1
-    fi
-    
-    echo -e "${YELLOW}Importing bookmarks from: $legacy_file${NC}"
-    echo -e "${YELLOW}This will merge with your existing JSON bookmarks.${NC}"
-    
-    local confirm="y"
-    if [ "$NON_INTERACTIVE" = false ]; then
-        read -p "Continue? (y/n): " confirm
-    fi
-    
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        echo -e "${YELLOW}Import cancelled.${NC}"
-        exit 0
-    fi
-    
-    # Read the legacy file line by line
-    while IFS=$'\t' read -r description type command || [ -n "$description" ]; do
-        # Skip empty lines
-        if [ -z "$description" ]; then
-            continue
-        fi
-        
-        # Check if it's an obsolete bookmark
-        local status="active"
-        if [[ "$description" == "(OBSOLETE) "* ]]; then
-            status="obsolete"
-            description="${description#(OBSOLETE) }"
-        fi
-        
-        # Generate a unique ID
-        local id=$(generate_id)
-        local created=$(date +"%Y-%m-%d %H:%M:%S")
-        
-        # Prepare the bookmark entry
-        local entry=$(jq -n \
-            --arg id "$id" \
-            --arg desc "$description" \
-            --arg type "$type" \
-            --arg cmd "$command" \
-            --arg created "$created" \
-            --arg status "$status" \
-            '{id: $id, description: $desc, type: $type, command: $cmd, tags: "", notes: "", created: $created, status: $status}')
-        
-        # Add the bookmark to the file
-        local updated_json=$(jq --argjson entry "$entry" '.bookmarks += [$entry]' "$BOOKMARKS_FILE")
-        echo "$updated_json" > "$BOOKMARKS_FILE"
-        
-        echo -e "${GREEN}Imported: ${CYAN}$description${NC}"
-    done < "$legacy_file"
-    
-    echo -e "${GREEN}Import completed.${NC}"
-}
 
-# Export bookmarks to legacy format (tab-delimited txt file)
-export_legacy_bookmarks() {
-    local export_file="$BOOKMARKS_DIR/bookmarks_export.txt"
-    
-    echo -e "${YELLOW}Exporting bookmarks to: $export_file${NC}"
-    
-    # Clear the export file if it exists
-    > "$export_file"
-    
-    # Export each bookmark
-    jq -r '.bookmarks[] | "\(.description)|\(.type)|\(.command)|\(.status)"' "$BOOKMARKS_FILE" | \
-    while IFS="|" read -r description type command status; do
-        if [ "$status" = "obsolete" ]; then
-            echo -e "(OBSOLETE) $description\t$type\t$command" >> "$export_file"
-        else
-            echo -e "$description\t$type\t$command" >> "$export_file"
-        fi
-    done
-    
-    echo -e "${GREEN}Export completed: ${CYAN}$export_file${NC}"
-}
 
 # Backup the bookmarks file
 backup_bookmarks() {
@@ -681,8 +601,6 @@ show_help() {
     echo "  $0 list                                      # List all bookmarks without executing"
     echo "  $0 details                                   # List all bookmarks with details"
     echo "  $0 tag \"tag\"                                # Search bookmarks by tag"
-    echo "  $0 import \"/path/to/legacy_file.txt\"         # Import from legacy format"
-    echo "  $0 export                                    # Export to legacy format"
     echo "  $0 backup                                    # Create a backup of bookmarks"
     echo "  $0 restore                                   # Restore from a backup"
     echo "  $0 [search term]                             # Search and execute a bookmark"
@@ -788,16 +706,6 @@ case "$1" in
             exit 1
         fi
         search_by_tag "$2"
-        ;;
-    "import")
-        if [ $# -lt 2 ]; then
-            echo -e "${RED}Usage: $0 import \"/path/to/legacy_file.txt\"${NC}"
-            exit 1
-        fi
-        import_legacy_bookmarks "$2"
-        ;;
-    "export")
-        export_legacy_bookmarks
         ;;
     "backup")
         backup_bookmarks

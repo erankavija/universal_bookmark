@@ -188,18 +188,6 @@ EOF
     echo -e "${GREEN}Created example hook: $HOME/.bookmarks/hooks/after_add.sh.example${NC}"
 fi
 
-# Import existing bookmarks.txt if it exists
-if [ -f "$HOME/.bookmarks/bookmarks.txt" ]; then
-    echo -e "${YELLOW}Found existing bookmarks.txt file.${NC}"
-    read -p "Do you want to import these bookmarks? (y/n): " import_bookmarks
-    
-    if [[ "$import_bookmarks" =~ ^[Yy]$ ]]; then
-        "$SCRIPT_DIR/bookmarks.sh" import "$HOME/.bookmarks/bookmarks.txt"
-        mv "$HOME/.bookmarks/bookmarks.txt" "$HOME/.bookmarks/bookmarks.txt.bak"
-        echo -e "${GREEN}Renamed old bookmarks file to bookmarks.txt.bak${NC}"
-    fi
-fi
-
 echo -e "${GREEN}Universal Bookmarks setup completed!${NC}"
 echo -e "${BLUE}Directory:${NC} $HOME/.bookmarks"
 echo -e "${BLUE}Bookmarks file:${NC} $HOME/.bookmarks/bookmarks.json"
