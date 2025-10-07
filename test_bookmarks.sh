@@ -102,19 +102,86 @@ run_test_suite() {
     
     # Test marking a bookmark as obsolete
     run_test "Mark bookmark as obsolete" \
-        "./bookmarks.sh obsolete 'Test Script'"
+        "./bookmarks.sh -y obsolete 'Test Script'"
     
     # Test backup creation
     run_test "Create backup" \
-        "./bookmarks.sh backup"
+        "./bookmarks.sh -y backup"
     
     # Test exporting bookmarks
     run_test "Export bookmarks" \
-        "./bookmarks.sh export"
+        "./bookmarks.sh -y export"
     
     # Test deleting a bookmark
     run_test "Delete a bookmark" \
-        "./bookmarks.sh delete 'Test URL'"
+        "./bookmarks.sh -y delete 'Test URL'"
+    
+    # Test jq command extraction with fzf filter
+    echo -e "${BLUE}Testing jq command extraction with fzf filter...${NC}"
+    run_test "Add test bookmarks for jq extraction" \
+        "./bookmarks.sh add 'List Files' script 'ls -la' 'test,files' 'List all files' && \
+         ./bookmarks.sh add 'Echo Test' script 'echo \"Hello World\"' 'test,echo' 'Echo test message'"
+    
+    # Test formatting bookmarks for fzf
+    run_test "Format bookmarks for fzf display" \
+        "jq -r '.bookmarks[] | if .status == \"obsolete\" then \"[OBSOLETE] \" else \"\" end + \"[\" + .type + \"] \" + .description' \"$TEST_BOOKMARKS_FILE\" | grep -q '\[script\] List Files'"
+    
+    # Test extracting command using jq from a formatted line
+    echo -e "${BLUE}Testing command extraction from fzf-like output...${NC}"
+    
+    # Simulate what happens when fzf filters a line
+    # 1. Format the line like fzf displays it
+    local formatted_line="[script] List Files"
+    
+    # 2. Extract description (removing ANSI codes and format markers)
+    local extracted_desc=$(echo "$formatted_line" | sed -E 's/^\[OBSOLETE\] \[(.*)\] (.*)/\2/' | sed -E 's/^\[(.*)\] (.*)/\2/')
+    
+    # 3. Use jq to get the command from the description
+    local extracted_cmd=$(jq -r --arg desc "$extracted_desc" '.bookmarks[] | select(.description == $desc) | .command' "$TEST_BOOKMARKS_FILE")
+    
+    # 4. Verify the command is correct
+    if [ "$extracted_cmd" = "ls -la" ]; then
+        echo -e "${GREEN}✓ Test passed: Extract command from formatted line${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: Expected 'ls -la', got '$extracted_cmd'${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test with OBSOLETE marker
+    run_test "Mark bookmark as obsolete for jq test" \
+        "./bookmarks.sh -y obsolete 'List Files'"
+    
+    # Test extraction with obsolete bookmark
+    local obsolete_formatted_line="[OBSOLETE] [script] List Files"
+    local obsolete_extracted_desc=$(echo "$obsolete_formatted_line" | sed -E 's/\x1B\[[0-9;]*[mK]//g' | sed -E 's/^\[OBSOLETE\] \[(.*)\] (.*)/\2/')
+    local obsolete_extracted_cmd=$(jq -r --arg desc "$obsolete_extracted_desc" '.bookmarks[] | select(.description == $desc) | .command' "$TEST_BOOKMARKS_FILE")
+    
+    if [ "$obsolete_extracted_cmd" = "ls -la" ]; then
+        echo -e "${GREEN}✓ Test passed: Extract command from obsolete formatted line${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: Expected 'ls -la', got '$obsolete_extracted_cmd'${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test fzf filter mode (non-interactive)
+    echo -e "${BLUE}Testing fzf filter mode for bookmark search...${NC}"
+    local fzf_result=$(jq -r '.bookmarks[] | if .status == "obsolete" then "[OBSOLETE] " else "" end + "[" + .type + "] " + .description' "$TEST_BOOKMARKS_FILE" | fzf --ansi --filter="Echo Test" | head -1)
+    
+    if echo "$fzf_result" | grep -q "Echo Test"; then
+        echo -e "${GREEN}✓ Test passed: fzf filter search${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: fzf filter did not find 'Echo Test'${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
     
     # Summary
     echo -e "${BLUE}Test summary:${NC}"
