@@ -530,15 +530,19 @@ import_legacy_bookmarks() {
     fi
     
     # Read the legacy file line by line
-    while IFS=$'\t' read -r description type command || [ -n "$description" ]; do
+    while IFS=$'\t' read -r description type command status_field || [ -n "$description" ]; do
         # Skip empty lines
         if [ -z "$description" ]; then
             continue
         fi
         
-        # Check if it's an obsolete bookmark
+        # Determine status from either the 4th column or the (OBSOLETE) prefix
         local status="active"
-        if [[ "$description" == "(OBSOLETE) "* ]]; then
+        if [ -n "$status_field" ] && [ "$status_field" != "" ]; then
+            # New format: status is in the 4th column
+            status="$status_field"
+        elif [[ "$description" == "(OBSOLETE) "* ]]; then
+            # Old format: status is in the description prefix
             status="obsolete"
             description="${description#(OBSOLETE) }"
         fi
@@ -579,11 +583,7 @@ export_legacy_bookmarks() {
     # Export each bookmark
     jq -r '.bookmarks[] | "\(.description)|\(.type)|\(.command)|\(.status)"' "$BOOKMARKS_FILE" | \
     while IFS="|" read -r description type command status; do
-        if [ "$status" = "obsolete" ]; then
-            echo -e "(OBSOLETE) $description\t$type\t$command" >> "$export_file"
-        else
-            echo -e "$description\t$type\t$command" >> "$export_file"
-        fi
+        echo -e "$description\t$type\t$command\t$status" >> "$export_file"
     done
     
     echo -e "${GREEN}Export completed: ${CYAN}$export_file${NC}"
