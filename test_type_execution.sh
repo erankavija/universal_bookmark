@@ -122,6 +122,10 @@ run_test_suite() {
     run_test "Add note bookmark" \
         "./bookmarks.sh add 'Test Note' note '\"$TEST_DIR/files/test.txt\"' 'test'"
     
+    # Test edit type (should use BOOKMARKS_EDITOR or EDITOR)
+    run_test "Add edit bookmark" \
+        "./bookmarks.sh add 'Test Edit' edit '\"$TEST_DIR/files/test.txt\"' 'test'"
+    
     # Verify bookmarks were added correctly
     echo -e "${BLUE}Verifying bookmark types...${NC}"
     
@@ -129,12 +133,13 @@ run_test_suite() {
     local cmd_count=$(jq -r '.bookmarks[] | select(.type == "cmd") | .description' "$TEST_BOOKMARKS_FILE" | wc -l)
     local url_count=$(jq -r '.bookmarks[] | select(.type == "url") | .description' "$TEST_BOOKMARKS_FILE" | wc -l)
     local file_count=$(jq -r '.bookmarks[] | select(.type == "file") | .description' "$TEST_BOOKMARKS_FILE" | wc -l)
+    local edit_count=$(jq -r '.bookmarks[] | select(.type == "edit") | .description' "$TEST_BOOKMARKS_FILE" | wc -l)
     
-    if [ "$script_count" -ge 1 ] && [ "$cmd_count" -ge 1 ] && [ "$url_count" -ge 1 ] && [ "$file_count" -ge 1 ]; then
+    if [ "$script_count" -ge 1 ] && [ "$cmd_count" -ge 1 ] && [ "$url_count" -ge 1 ] && [ "$file_count" -ge 1 ] && [ "$edit_count" -ge 1 ]; then
         echo -e "${GREEN}✓ All bookmark types added successfully${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
-        echo -e "${RED}✗ Not all bookmark types were added (script: $script_count, cmd: $cmd_count, url: $url_count, file: $file_count)${NC}"
+        echo -e "${RED}✗ Not all bookmark types were added (script: $script_count, cmd: $cmd_count, url: $url_count, file: $file_count, edit: $edit_count)${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))

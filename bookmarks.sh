@@ -54,7 +54,7 @@ if [ ! -f "$BOOKMARKS_FILE" ] || [ ! -s "$BOOKMARKS_FILE" ]; then
 fi
 
 # Valid bookmark types
-VALID_TYPES=("url" "pdf" "script" "ssh" "app" "cmd" "note" "folder" "file" "custom")
+VALID_TYPES=("url" "pdf" "script" "ssh" "app" "cmd" "note" "folder" "file" "edit" "custom")
 
 # Create a unique ID for the bookmark
 generate_id() {
@@ -539,6 +539,12 @@ execute_bookmark_by_type() {
             else
                 eval "cat $command"
             fi
+            ;;
+        edit)
+            # For edit type, use BOOKMARKS_EDITOR if defined, otherwise EDITOR
+            local editor="${BOOKMARKS_EDITOR:-${EDITOR:-vi}}"
+            echo -e "${GREEN}Opening with $editor: ${CYAN}$description${NC}"
+            eval "$editor $command"
             ;;
         script|ssh|app|cmd|custom|*)
             # Direct execution for scripts, SSH connections, apps, commands, and custom types

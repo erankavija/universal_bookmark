@@ -200,6 +200,7 @@ The system supports these standard bookmark types, but you can define custom typ
 | `app` | Application launchers | `code /path/to/project` | Direct shell execution |
 | `cmd` | Custom commands | `curl wttr.in` | Direct shell execution |
 | `note` | Notes or text files | `"$BOOKMARKS_DIR/notes/research.txt"` | System default opener or `less` |
+| `edit` | Edit files in editor | `"$HOME/todo.txt"` | `$BOOKMARKS_EDITOR` or `$EDITOR` (fallback: `vi`) |
 | `folder` | Directory shortcuts | `"$HOME/Projects"` | System default opener (`xdg-open`/`open`) |
 | `file` | File shortcuts | `"$HOME/Documents/report.docx"` | System default opener (`xdg-open`/`open`) |
 | `custom` | Any other type | *(your custom command)* | Direct shell execution |
@@ -222,6 +223,14 @@ The bookmark system uses intelligent, type-aware execution:
   ```bash
   bookmark add "Weather" cmd 'curl wttr.in'
   bookmark add "Server" ssh 'ssh user@server.com'
+  ```
+
+- **Edit type**: Opens the specified file in your preferred editor. Uses `$BOOKMARKS_EDITOR` if defined, otherwise `$EDITOR`, with `vi` as the final fallback.
+
+  Example:
+  ```bash
+  bookmark add "Todo List" edit '"$HOME/todo.txt"'
+  bookmark add "Config" edit '"$HOME/.bashrc"'
   ```
 
 - **Note type**: Attempts to use the system default opener first, falls back to `less` or `cat` for terminal viewing.
