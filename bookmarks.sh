@@ -208,6 +208,40 @@ interactive_add_bookmark() {
     NON_INTERACTIVE="$saved_non_interactive"
 }
 
+# Select a bookmark using fzf
+# Returns the description of the selected bookmark
+select_bookmark_with_fzf() {
+    local prompt="${1:-Select a bookmark}"
+    
+    # Prepare the bookmarks for display
+    local formatted_bookmarks=$(jq -r '.bookmarks[] | "\(.id)|\(.description)|\(.type)|\(.command)|\(.status)"' "$BOOKMARKS_FILE" | \
+        while IFS="|" read -r id description type command status; do
+            status_str=""
+            if [ "$status" = "obsolete" ]; then
+                status_str="${RED}[OBSOLETE]${NC} "
+            fi
+            echo -e "${status_str}${CYAN}[$type]${NC} ${YELLOW}$description${NC}"
+        done)
+    
+    if [ -z "$formatted_bookmarks" ]; then
+        echo -e "${YELLOW}No bookmarks found.${NC}" >&2
+        return 1
+    fi
+    
+    # Use fzf for interactive selection
+    local selected=$(echo -e "$formatted_bookmarks" | fzf --ansi --height 40% --border --prompt="$prompt: ")
+    
+    if [ -z "$selected" ]; then
+        return 1
+    fi
+    
+    # Extract the description (remove ANSI codes and format markers)
+    local description=$(echo "$selected" | sed -E 's/\x1B\[[0-9;]*[mK]//g' | sed -E 's/^\[OBSOLETE\] \[(.*)\] (.*)/\2/' | sed -E 's/^\[(.*)\] (.*)/\2/')
+    
+    echo "$description"
+    return 0
+}
+
 # Update an existing bookmark
 update_bookmark() {
     local description="$1"
@@ -247,6 +281,15 @@ update_bookmark() {
 # Edit a bookmark
 edit_bookmark() {
     local id_or_desc="$1"
+    
+    # If no argument provided, use fzf to select
+    if [ -z "$id_or_desc" ]; then
+        id_or_desc=$(select_bookmark_with_fzf "Select bookmark to edit")
+        if [ $? -ne 0 ] || [ -z "$id_or_desc" ]; then
+            echo -e "${YELLOW}No bookmark selected.${NC}"
+            exit 0
+        fi
+    fi
     
     # Find the bookmark
     local bookmark
@@ -330,6 +373,15 @@ edit_bookmark() {
 delete_bookmark() {
     local id_or_desc="$1"
     
+    # If no argument provided, use fzf to select
+    if [ -z "$id_or_desc" ]; then
+        id_or_desc=$(select_bookmark_with_fzf "Select bookmark to delete")
+        if [ $? -ne 0 ] || [ -z "$id_or_desc" ]; then
+            echo -e "${YELLOW}No bookmark selected.${NC}"
+            exit 0
+        fi
+    fi
+    
     # Find the bookmark
     local bookmark
     if [[ "$id_or_desc" == *"_"* ]]; then
@@ -374,6 +426,15 @@ delete_bookmark() {
 # Make a bookmark obsolete
 obsolete_bookmark() {
     local id_or_desc="$1"
+    
+    # If no argument provided, use fzf to select
+    if [ -z "$id_or_desc" ]; then
+        id_or_desc=$(select_bookmark_with_fzf "Select bookmark to mark obsolete")
+        if [ $? -ne 0 ] || [ -z "$id_or_desc" ]; then
+            echo -e "${YELLOW}No bookmark selected.${NC}"
+            exit 0
+        fi
+    fi
     
     # Find the bookmark
     local bookmark
@@ -697,10 +758,10 @@ show_help() {
     echo -e "${GREEN}Usage:${NC}"
     echo "  $script_name add \"Description\" type \"command\" [tags] [notes]   # Add a new bookmark"
     echo "  $script_name add                                       # Add a bookmark interactively"
-    echo "  $script_name edit \"Description or ID\"                      # Edit a bookmark interactively"
+    echo "  $script_name edit [\"Description or ID\"]                   # Edit a bookmark interactively (uses fzf if no argument)"
     echo "  $script_name update \"Description\" type \"command\" [tags] [notes] # Update a bookmark"
-    echo "  $script_name delete \"Description or ID\"                    # Delete a bookmark"
-    echo "  $script_name obsolete \"Description or ID\"                  # Mark a bookmark as obsolete"
+    echo "  $script_name delete [\"Description or ID\"]                 # Delete a bookmark (uses fzf if no argument)"
+    echo "  $script_name obsolete [\"Description or ID\"]               # Mark a bookmark as obsolete (uses fzf if no argument)"
     echo "  $script_name list                                      # List all bookmarks without executing"
     echo "  $script_name details                                   # List all bookmarks with details"
     echo "  $script_name tag \"tag\"                                # Search bookmarks by tag"
@@ -772,11 +833,7 @@ case "$1" in
         run_hook "after_add"
         ;;
     "edit")
-        if [ $# -lt 2 ]; then
-            echo -e "${RED}Usage: $0 edit \"Description or ID\"${NC}"
-            exit 1
-        fi
-        edit_bookmark "$2"
+        edit_bookmark "${2:-}"
         run_hook "after_edit"
         ;;
     "update")
@@ -788,19 +845,11 @@ case "$1" in
         run_hook "after_update"
         ;;
     "delete")
-        if [ $# -lt 2 ]; then
-            echo -e "${RED}Usage: $0 delete \"Description or ID\"${NC}"
-            exit 1
-        fi
-        delete_bookmark "$2"
+        delete_bookmark "${2:-}"
         run_hook "after_delete"
         ;;
     "obsolete")
-        if [ $# -lt 2 ]; then
-            echo -e "${RED}Usage: $0 obsolete \"Description or ID\"${NC}"
-            exit 1
-        fi
-        obsolete_bookmark "$2"
+        obsolete_bookmark "${2:-}"
         run_hook "after_obsolete"
         ;;
     "list")
