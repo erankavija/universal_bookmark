@@ -124,9 +124,10 @@ bookmark add "Open ChatGPT" url 'xdg-open "https://chat.openai.com/"' "ai tools 
 
 #### Editing Bookmarks
 
-Edit a bookmark interactively:
+Edit a bookmark interactively. If no description is provided, fzf will launch to select a bookmark:
 ```bash
-bookmark edit "Description"
+bookmark edit                    # Uses fzf to select a bookmark
+bookmark edit "Description"      # Edit a specific bookmark
 ```
 Or update directly:
 ```bash
@@ -135,14 +136,16 @@ bookmark update "Description" new-type "new-command" "new-tags" "new-notes"
 
 #### Deleting or Marking Obsolete
 
-Delete a bookmark completely:
+Delete a bookmark completely. If no description is provided, fzf will launch to select a bookmark:
 ```bash
-bookmark delete "Description"
+bookmark delete                  # Uses fzf to select a bookmark
+bookmark delete "Description"    # Delete a specific bookmark
 ```
 
-Mark a bookmark as obsolete (without deleting):
+Mark a bookmark as obsolete (without deleting). If no description is provided, fzf will launch to select a bookmark:
 ```bash
-bookmark obsolete "Description"
+bookmark obsolete                # Uses fzf to select a bookmark
+bookmark obsolete "Description"  # Mark a specific bookmark as obsolete
 ```
 
 ### Advanced Features
