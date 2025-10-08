@@ -462,7 +462,7 @@ execute_bookmark_by_type() {
             # Use system's default opener for these types
             if [ -n "$open_cmd" ]; then
                 echo -e "${GREEN}Opening with $open_cmd: ${CYAN}$description${NC}"
-                eval "$open_cmd $command"
+                eval "$open_cmd $command & disown"
             else
                 echo -e "${YELLOW}Warning: No system opener found (xdg-open, open, or start)${NC}"
                 echo -e "${BLUE}Falling back to direct execution${NC}"
@@ -691,23 +691,24 @@ run_hook() {
 
 # Show help information
 show_help() {
+    script_name=$(basename "$0")
     echo -e "${BLUE}Universal Bookmarks - Manage and use bookmarks from the command line${NC}"
     echo ""
     echo -e "${GREEN}Usage:${NC}"
-    echo "  $0 add \"Description\" type \"command\" [tags] [notes]   # Add a new bookmark"
-    echo "  $0 add                                       # Add a bookmark interactively"
-    echo "  $0 edit \"Description or ID\"                      # Edit a bookmark interactively"
-    echo "  $0 update \"Description\" type \"command\" [tags] [notes] # Update a bookmark"
-    echo "  $0 delete \"Description or ID\"                    # Delete a bookmark"
-    echo "  $0 obsolete \"Description or ID\"                  # Mark a bookmark as obsolete"
-    echo "  $0 list                                      # List all bookmarks without executing"
-    echo "  $0 details                                   # List all bookmarks with details"
-    echo "  $0 tag \"tag\"                                # Search bookmarks by tag"
-    echo "  $0 backup                                    # Create a backup of bookmarks"
-    echo "  $0 restore                                   # Restore from a backup"
-    echo "  $0 [search term]                             # Search and execute a bookmark"
-    echo "  $0                                           # Interactive fuzzy search"
-    echo "  $0 help                                      # Show this help information"
+    echo "  $script_name add \"Description\" type \"command\" [tags] [notes]   # Add a new bookmark"
+    echo "  $script_name add                                       # Add a bookmark interactively"
+    echo "  $script_name edit \"Description or ID\"                      # Edit a bookmark interactively"
+    echo "  $script_name update \"Description\" type \"command\" [tags] [notes] # Update a bookmark"
+    echo "  $script_name delete \"Description or ID\"                    # Delete a bookmark"
+    echo "  $script_name obsolete \"Description or ID\"                  # Mark a bookmark as obsolete"
+    echo "  $script_name list                                      # List all bookmarks without executing"
+    echo "  $script_name details                                   # List all bookmarks with details"
+    echo "  $script_name tag \"tag\"                                # Search bookmarks by tag"
+    echo "  $script_name backup                                    # Create a backup of bookmarks"
+    echo "  $script_name restore                                   # Restore from a backup"
+    echo "  $script_name [search term]                             # Search and execute a bookmark"
+    echo "  $script_name                                           # Interactive fuzzy search"
+    echo "  $script_name help                                      # Show this help information"
     echo ""
     echo -e "${CYAN}Bookmark Types:${NC}"
     for type in "${VALID_TYPES[@]}"; do
