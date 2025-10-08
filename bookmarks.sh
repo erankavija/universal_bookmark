@@ -519,7 +519,7 @@ execute_bookmark_by_type() {
     fi
     
     case "$type" in
-        url|pdf|folder|file)
+        url|folder|file)
             # Use system's default opener for these types
             if [ -n "$open_cmd" ]; then
                 echo -e "${GREEN}Opening with $open_cmd: ${CYAN}$description${NC}"
@@ -528,6 +528,25 @@ execute_bookmark_by_type() {
                 echo -e "${YELLOW}Warning: No system opener found (xdg-open, open, or start)${NC}"
                 echo -e "${BLUE}Falling back to direct execution${NC}"
                 eval "$command"
+            fi
+            ;;
+        pdf)
+            # For PDFs, interpret as file and page number if specified (e.g., file.pdf#page=10)
+            # Extract file and page number
+            local file_part=$(echo "$command" | cut -d'#' -f1)
+            local page_part=$(echo "$command" | grep -oP '(?<=#page=)[0-9]+' || echo "")
+            # Open with zathura if available, otherwise fail with message
+            if command -v zathura &> /dev/null; then
+                if [ -n "$page_part" ]; then
+                    echo -e "${GREEN}Opening PDF with zathura at page $page_part: ${CYAN}$file_part${NC}"
+                    zathura "$file_part" --page "$page_part" --fork
+                else
+                    echo -e "${GREEN}Opening PDF with zathura: ${CYAN}$file_part${NC}"
+                    zathura "$file_part" --fork
+                fi
+            else
+                echo -e "${RED}Error: zathura is not installed. Please install it to open PDF files.${NC}"
+                exit 1
             fi
             ;;
         note)
@@ -761,21 +780,21 @@ show_help() {
     script_name=$(basename "$0")
     echo -e "${BLUE}Universal Bookmarks - Manage and use bookmarks from the command line${NC}"
     echo ""
-    echo -e "${GREEN}Usage:${NC}"
-    echo "  $script_name add \"Description\" type \"command\" [tags] [notes]   # Add a new bookmark"
-    echo "  $script_name add                                       # Add a bookmark interactively"
-    echo "  $script_name edit [\"Description or ID\"]                   # Edit a bookmark interactively (uses fzf if no argument)"
-    echo "  $script_name update \"Description\" type \"command\" [tags] [notes] # Update a bookmark"
-    echo "  $script_name delete [\"Description or ID\"]                 # Delete a bookmark (uses fzf if no argument)"
-    echo "  $script_name obsolete [\"Description or ID\"]               # Mark a bookmark as obsolete (uses fzf if no argument)"
-    echo "  $script_name list                                      # List all bookmarks without executing"
-    echo "  $script_name details                                   # List all bookmarks with details"
-    echo "  $script_name tag \"tag\"                                # Search bookmarks by tag"
-    echo "  $script_name backup                                    # Create a backup of bookmarks"
-    echo "  $script_name restore                                   # Restore from a backup"
-    echo "  $script_name [search term]                             # Search and execute a bookmark"
-    echo "  $script_name                                           # Interactive fuzzy search"
-    echo "  $script_name help                                      # Show this help information"
+    echo -e "${GREEN}Usage: $script_name [command], where command can be one of${NC}"
+    echo "  add \"Description\" type \"command\" [tags] [notes]   # Add a new bookmark"
+    echo "  add                                       # Add a bookmark interactively"
+    echo "  edit [\"Description or ID\"]                   # Edit a bookmark interactively (uses fzf if no argument)"
+    echo "  update \"Description\" type \"command\" [tags] [notes] # Update a bookmark"
+    echo "  delete [\"Description or ID\"]                 # Delete a bookmark (uses fzf if no argument)"
+    echo "  obsolete [\"Description or ID\"]               # Mark a bookmark as obsolete (uses fzf if no argument)"
+    echo "  list                                      # List all bookmarks without executing"
+    echo "  details                                   # List all bookmarks with details"
+    echo "  tag \"tag\"                                # Search bookmarks by tag"
+    echo "  backup                                    # Create a backup of bookmarks"
+    echo "  restore                                   # Restore from a backup"
+    echo "  help                                      # Show this help information"
+    echo "  [search term]                             # Search and execute a bookmark"
+    echo "  [no arguments]                            # Search bookmarks interactively"
     echo ""
     echo -e "${CYAN}Bookmark Types:${NC}"
     for type in "${VALID_TYPES[@]}"; do
