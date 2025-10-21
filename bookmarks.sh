@@ -899,10 +899,14 @@ search_by_tag() {
         if [[ "$line" == *"[OBSOLETE]"* ]]; then
             echo -e "${RED}$line${NC}"
         else
-            # Color the type and description differently
-            local colored_line
-            colored_line=$(echo "$line" | sed -E "s/\[([^\]]*)\]/\${CYAN}[\1]\${NC}/" | sed -E "s/\] (.*)$/\] \${YELLOW}\1\${NC}/")
-            echo -e "$colored_line"
+            # Color the type and description differently using bash pattern matching
+            if [[ "$line" =~ ^\[([^\]]+)\]\ (.*)$ ]]; then
+                local type="${BASH_REMATCH[1]}"
+                local description="${BASH_REMATCH[2]}"
+                echo -e "${CYAN}[$type]${NC} ${YELLOW}$description${NC}"
+            else
+                echo -e "$line"
+            fi
         fi
     done
 }

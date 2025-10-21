@@ -167,6 +167,112 @@ else
     fi
 fi
 
+# Install autocompletion files
+install_autocompletion() {
+    local autocomp_installed=false
+    
+    if [[ "$SHELL_NAME" == "zsh" ]]; then
+        # Try to find zsh completion directory
+        local zsh_comp_dirs=(
+            "$HOME/.local/share/zsh/site-functions"
+            "$HOME/.zsh/completions"
+            "$HOME/.config/zsh/completions"
+            "/usr/local/share/zsh/site-functions"
+            "/usr/share/zsh/site-functions"
+        )
+        
+        for comp_dir in "${zsh_comp_dirs[@]}"; do
+            if [[ -d "$comp_dir" ]] || [[ "$comp_dir" == "$HOME"* ]]; then
+                # Create directory if it's in user home and doesn't exist
+                if [[ "$comp_dir" == "$HOME"* ]] && [[ ! -d "$comp_dir" ]]; then
+                    mkdir -p "$comp_dir"
+                fi
+                
+                # Try to install completion file
+                if [[ -w "$comp_dir" ]] || [[ "$comp_dir" == "$HOME"* ]]; then
+                    cp "$SCRIPT_DIR/completions/_bookmark" "$comp_dir/_bookmark" 2>/dev/null && {
+                        echo -e "${GREEN}Installed zsh completion to: $comp_dir/_bookmark${NC}"
+                        autocomp_installed=true
+                        
+                        # Add fpath to .zshrc if it's a custom directory
+                        if [[ "$comp_dir" == "$HOME"* ]] && ! grep -q "fpath.*$comp_dir" "$HOME/.zshrc" 2>/dev/null; then
+                            echo '' >> "$HOME/.zshrc"
+                            echo "# Add custom completion directory to fpath" >> "$HOME/.zshrc"
+                            echo "fpath=(\"$comp_dir\" \$fpath)" >> "$HOME/.zshrc"
+                            echo "autoload -Uz compinit && compinit" >> "$HOME/.zshrc"
+                            echo -e "${GREEN}Added completion directory to .zshrc${NC}"
+                        fi
+                        break
+                    }
+                fi
+            fi
+        done
+        
+        if [[ "$autocomp_installed" == false ]]; then
+            # Fallback: create user completion directory
+            mkdir -p "$HOME/.zsh/completions"
+            cp "$SCRIPT_DIR/completions/_bookmark" "$HOME/.zsh/completions/_bookmark"
+            echo -e "${GREEN}Installed zsh completion to: $HOME/.zsh/completions/_bookmark${NC}"
+            
+            if ! grep -q "fpath.*/.zsh/completions" "$HOME/.zshrc" 2>/dev/null; then
+                echo '' >> "$HOME/.zshrc"
+                echo "# Add custom completion directory to fpath" >> "$HOME/.zshrc"
+                echo "fpath=(\"\$HOME/.zsh/completions\" \$fpath)" >> "$HOME/.zshrc"
+                echo "autoload -Uz compinit && compinit" >> "$HOME/.zshrc"
+                echo -e "${GREEN}Added completion directory to .zshrc${NC}"
+            fi
+            autocomp_installed=true
+        fi
+        
+    elif [[ "$SHELL_NAME" == "bash" ]]; then
+        # Try to find bash completion directory
+        local bash_comp_dirs=(
+            "$HOME/.local/share/bash-completion/completions"
+            "$HOME/.bash_completion.d"
+            "/usr/local/etc/bash_completion.d"
+            "/etc/bash_completion.d"
+            "/usr/share/bash-completion/completions"
+        )
+        
+        for comp_dir in "${bash_comp_dirs[@]}"; do
+            if [[ -d "$comp_dir" ]] || [[ "$comp_dir" == "$HOME"* ]]; then
+                # Create directory if it's in user home and doesn't exist
+                if [[ "$comp_dir" == "$HOME"* ]] && [[ ! -d "$comp_dir" ]]; then
+                    mkdir -p "$comp_dir"
+                fi
+                
+                # Try to install completion file
+                if [[ -w "$comp_dir" ]] || [[ "$comp_dir" == "$HOME"* ]]; then
+                    cp "$SCRIPT_DIR/completions/bookmark-completion.bash" "$comp_dir/bookmark" 2>/dev/null && {
+                        echo -e "${GREEN}Installed bash completion to: $comp_dir/bookmark${NC}"
+                        autocomp_installed=true
+                        break
+                    }
+                fi
+            fi
+        done
+        
+        if [[ "$autocomp_installed" == false ]]; then
+            # Fallback: source completion directly in .bashrc
+            if ! grep -q "bookmark-completion.bash" "$HOME/.bashrc" 2>/dev/null; then
+                echo '' >> "$HOME/.bashrc"
+                echo "# Universal Bookmarks completion" >> "$HOME/.bashrc"
+                echo "source \"$SCRIPT_DIR/completions/bookmark-completion.bash\"" >> "$HOME/.bashrc"
+                echo -e "${GREEN}Added completion source to .bashrc${NC}"
+                autocomp_installed=true
+            fi
+        fi
+    fi
+    
+    if [[ "$autocomp_installed" == true ]]; then
+        echo -e "${CYAN}Shell autocompletion installed successfully!${NC}"
+        echo -e "${YELLOW}You may need to restart your shell or run 'exec \$SHELL' to activate completion${NC}"
+    else
+        echo -e "${YELLOW}Could not install autocompletion automatically.${NC}"
+        echo -e "You can manually install completion files from: $SCRIPT_DIR/completions/"
+    fi
+}
+
 # Create example hook file
 if [ ! -f "$HOME/.bookmarks/hooks/after_add.sh.example" ]; then
     cat > "$HOME/.bookmarks/hooks/after_add.sh.example" << 'EOF'
@@ -187,6 +293,9 @@ EOF
     chmod +x "$HOME/.bookmarks/hooks/after_add.sh.example"
     echo -e "${GREEN}Created example hook: $HOME/.bookmarks/hooks/after_add.sh.example${NC}"
 fi
+
+# Install autocompletion
+install_autocompletion
 
 echo -e "${GREEN}Universal Bookmarks setup completed!${NC}"
 echo -e "${BLUE}Directory:${NC} $HOME/.bookmarks"

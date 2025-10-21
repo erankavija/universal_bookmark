@@ -1,0 +1,167 @@
+#compdef bookmark bookmarks.sh
+
+# Zsh completion for Universal Bookmarks
+# Place this file in your zsh completion directory (e.g., ~/.config/zsh/completions/ or /usr/share/zsh/site-functions/)
+
+local context state line
+typeset -A opt_args
+
+# Main completion function
+_bookmark() {
+    local curcontext="$curcontext" state_descr
+    
+    # Check if BOOKMARKS_DIR is set and bookmarks file exists
+    if [[ -z "$BOOKMARKS_DIR" ]] || [[ ! -f "$BOOKMARKS_DIR/bookmarks.json" ]]; then
+        return 1
+    fi
+    
+    # Define the main argument structure
+    _arguments -C \
+        '(-y --yes)'{-y,--yes}'[Non-interactive mode]' \
+        '1: :_bookmark_commands' \
+        '*: :_bookmark_args' \
+        && return 0
+    
+    case $state in
+        command)
+            _bookmark_commands
+            ;;
+        args)
+            _bookmark_args
+            ;;
+    esac
+}
+
+# Complete bookmark commands
+_bookmark_commands() {
+    local commands=(
+        'add:Add a new bookmark'
+        'edit:Edit an existing bookmark'
+        'update:Update an existing bookmark'
+        'delete:Delete a bookmark'
+        'obsolete:Mark a bookmark as obsolete'
+        'list:List all bookmarks without executing'
+        'details:List all bookmarks with details'
+        'tag:Search bookmarks by tag'
+        'backup:Create a backup of bookmarks'
+        'restore:Restore from a backup'
+        'help:Show help information'
+    )
+    
+    _describe 'bookmark commands' commands
+}
+
+# Complete arguments based on the command
+_bookmark_args() {
+    local cmd="$words[2]"
+    
+    case $cmd in
+        add)
+            case $CURRENT in
+                3)
+                    _message 'description'
+                    ;;
+                4)
+                    _bookmark_types
+                    ;;
+                5)
+                    _message 'command'
+                    ;;
+                6)
+                    _bookmark_tags
+                    ;;
+                7)
+                    _message 'notes'
+                    ;;
+            esac
+            ;;
+        edit|delete|obsolete)
+            case $CURRENT in
+                3)
+                    _bookmark_descriptions
+                    ;;
+            esac
+            ;;
+        update)
+            case $CURRENT in
+                3)
+                    _bookmark_descriptions
+                    ;;
+                4)
+                    _bookmark_types
+                    ;;
+                5)
+                    _message 'command'
+                    ;;
+                6)
+                    _bookmark_tags
+                    ;;
+                7)
+                    _message 'notes'
+                    ;;
+            esac
+            ;;
+        tag)
+            case $CURRENT in
+                3)
+                    _bookmark_tags
+                    ;;
+            esac
+            ;;
+        *)
+            # For search terms or default behavior
+            _bookmark_descriptions
+            ;;
+    esac
+}
+
+# Complete bookmark types
+_bookmark_types() {
+    local types=(
+        'url:Web URLs'
+        'pdf:PDF documents'
+        'script:Executable scripts'
+        'ssh:SSH connections'
+        'app:Application launchers'
+        'cmd:Custom commands'
+        'note:Notes or text files'
+        'folder:Directory shortcuts'
+        'file:File shortcuts'
+        'edit:Files to edit'
+        'custom:Custom type'
+    )
+    
+    _describe 'bookmark types' types
+}
+
+# Complete existing bookmark descriptions
+_bookmark_descriptions() {
+    if [[ ! -f "$BOOKMARKS_DIR/bookmarks.json" ]] || ! command -v jq >/dev/null 2>&1; then
+        return 1
+    fi
+    
+    local descriptions
+    descriptions=($(jq -r '.bookmarks[].description' "$BOOKMARKS_DIR/bookmarks.json" 2>/dev/null | sed 's/[[:space:]]/\\ /g'))
+    
+    if [[ ${#descriptions[@]} -gt 0 ]]; then
+        _describe 'bookmark descriptions' descriptions
+    fi
+}
+
+# Complete existing tags
+_bookmark_tags() {
+    if [[ ! -f "$BOOKMARKS_DIR/bookmarks.json" ]] || ! command -v jq >/dev/null 2>&1; then
+        return 1
+    fi
+    
+    local tags
+    tags=($(jq -r '.bookmarks[].tags' "$BOOKMARKS_DIR/bookmarks.json" 2>/dev/null | \
+           tr ' ' '\n' | grep -v '^$' | sort -u | sed 's/[[:space:]]/\\ /g'))
+    
+    if [[ ${#tags[@]} -gt 0 ]]; then
+        _describe 'bookmark tags' tags
+    fi
+}
+
+# Run the completion
+_bookmark "$@"
