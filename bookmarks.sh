@@ -322,10 +322,14 @@ format_bookmarks_for_display() {
         if [[ "$status" == "obsolete" ]]; then
             echo -e "${RED}$display_line${NC}"
         else
-            # Color the type and description differently
-            local colored_line
-            colored_line=$(echo "$display_line" | sed -E "s/\[([^\]]*)\]/\${CYAN}[\1]\${NC}/" | sed -E "s/\] (.*)$/\] \${YELLOW}\1\${NC}/")
-            echo -e "$colored_line"
+            # Extract type and description for coloring
+            if [[ "$display_line" =~ ^\[([^\]]+)\]\ (.*)$ ]]; then
+                local type="${BASH_REMATCH[1]}"
+                local description="${BASH_REMATCH[2]}"
+                echo -e "${CYAN}[${type}]${NC} ${YELLOW}${description}${NC}"
+            else
+                echo "$display_line"
+            fi
         fi
     done
 }
@@ -1092,7 +1096,7 @@ fi
 
 # Main command handling
 # Parse flags
-while [[ "$1" == -* ]]; do
+while [[ $# -gt 0 && "$1" == -* ]]; do
     case "$1" in
         -y|--yes)
             NON_INTERACTIVE=true
@@ -1105,7 +1109,7 @@ while [[ "$1" == -* ]]; do
     esac
 done
 
-case "$1" in
+case "${1:-}" in
     "add")
         if [ $# -eq 1 ]; then
             # No arguments provided, run interactively
@@ -1164,7 +1168,7 @@ case "$1" in
         ;;
     *)
         # Default: list bookmarks
-        list_bookmarks "$1"
+        list_bookmarks "${1:-}"
         ;;
 esac
 
