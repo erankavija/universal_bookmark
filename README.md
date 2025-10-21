@@ -2,6 +2,8 @@
 
 Shell script to manage bookmarks in a JSON format. A bookmark can be anything from a URL to a script that you want to run frequently.
 
+Note: The content is mostly AI generated.
+
 ## Features
 
 - **Rich Bookmark Data**: Store descriptions, commands, types, tags, and notes
