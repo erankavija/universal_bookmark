@@ -304,6 +304,333 @@ interactive_add_bookmark() {
     NON_INTERACTIVE="$saved_non_interactive"
 }
 
+# Format bookmark data for editor display
+# Args: $1 - description, $2 - type, $3 - command, $4 - tags, $5 - notes
+# Returns: formatted string for editor with comments
+format_bookmark_for_editor() {
+    local description="$1"
+    local type="$2"
+    local command="$3"
+    local tags="${4:-}"
+    local notes="${5:-}"
+    
+    cat <<EOF
+# description
+$description
+# type (allowed: ${VALID_TYPES[*]})
+$type
+# command
+$command
+# tags
+$tags
+# notes
+$notes
+EOF
+}
+
+# Parse bookmark data from editor file
+# Args: $1 - path to the edited file
+# Returns: tab-separated values: description, type, command, tags, notes
+parse_bookmark_from_editor() {
+    local file="$1"
+    local description="" type="" command="" tags="" notes=""
+    local current_field=""
+    
+    while IFS= read -r line; do
+        # Skip empty lines
+        if [[ -z "$line" ]]; then
+            continue
+        fi
+        
+        # Check for field headers
+        if [[ "$line" == "# description" ]]; then
+            current_field="description"
+        elif [[ "$line" =~ ^"# type" ]]; then
+            current_field="type"
+        elif [[ "$line" == "# command" ]]; then
+            current_field="command"
+        elif [[ "$line" == "# tags" ]]; then
+            current_field="tags"
+        elif [[ "$line" == "# notes" ]]; then
+            current_field="notes"
+        elif [[ "$line" != "#"* ]]; then
+            # This is data, append to current field
+            case "$current_field" in
+                description)
+                    if [[ -z "$description" ]]; then
+                        description="$line"
+                    else
+                        description="${description}
+${line}"
+                    fi
+                    ;;
+                type)
+                    if [[ -z "$type" ]]; then
+                        type="$line"
+                    else
+                        type="${type}
+${line}"
+                    fi
+                    ;;
+                command)
+                    if [[ -z "$command" ]]; then
+                        command="$line"
+                    else
+                        command="${command}
+${line}"
+                    fi
+                    ;;
+                tags)
+                    if [[ -z "$tags" ]]; then
+                        tags="$line"
+                    else
+                        tags="${tags}
+${line}"
+                    fi
+                    ;;
+                notes)
+                    if [[ -z "$notes" ]]; then
+                        notes="$line"
+                    else
+                        notes="${notes}
+${line}"
+                    fi
+                    ;;
+            esac
+        fi
+    done < "$file"
+    
+    # Return tab-separated values
+    printf "%b\t%b\t%b\t%b\t%b" "$description" "$type" "$command" "$tags" "$notes"
+}
+
+# Edit bookmark using external editor
+# Args: $1 - ID or description (optional, uses fzf if not provided)
+edit_bookmark_with_editor() {
+    local id_or_desc="${1:-}"
+    
+    # If no argument provided, use fzf to select
+    if [[ -z "$id_or_desc" ]]; then
+        id_or_desc=$(select_bookmark_with_fzf "Select bookmark to edit")
+        if [[ $? -ne 0 ]] || [[ -z "$id_or_desc" ]]; then
+            echo -e "${YELLOW}No bookmark selected.${NC}"
+            exit 0
+        fi
+    fi
+    
+    # Validate JSON file first
+    validate_bookmarks_file || exit 1
+    
+    # Find the bookmark using the optimized function
+    local bookmark
+    bookmark=$(get_bookmark_by_id_or_desc "$id_or_desc")
+    
+    if [[ -z "$bookmark" ]]; then
+        echo -e "${RED}No bookmark found with ID or description: $id_or_desc${NC}" >&2
+        exit 1
+    fi
+    
+    # Extract current values efficiently
+    local current_values
+    current_values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags, .notes] | @tsv')
+    IFS=$'\t' read -r id description type command tags notes <<< "$current_values"
+    
+    # Create temporary file for editing
+    local tmpfile
+    tmpfile=$(mktemp /tmp/bookmark_edit_XXXXXX.txt)
+    
+    # Write formatted bookmark to temp file
+    format_bookmark_for_editor "$description" "$type" "$command" "$tags" "$notes" > "$tmpfile"
+    
+    # Get editor command
+    local editor="${BOOKMARKS_EDITOR:-${EDITOR:-vi}}"
+    
+    echo -e "${BLUE}Opening editor to edit bookmark: ${CYAN}$description${NC}"
+    
+    # Open editor
+    if ! "$editor" "$tmpfile"; then
+        echo -e "${RED}Editor exited with error${NC}" >&2
+        rm -f "$tmpfile"
+        exit 1
+    fi
+    
+    # Parse edited content
+    local parsed_values
+    parsed_values=$(parse_bookmark_from_editor "$tmpfile")
+    
+    # Use mapfile to properly handle multiline values in tab-separated format
+    local -a values
+    IFS=$'\t' read -r -d '' -a values <<< "$parsed_values" || true
+    new_description="${values[0]:-}"
+    new_type="${values[1]:-}"
+    new_command="${values[2]:-}"
+    new_tags="${values[3]:-}"
+    new_notes="${values[4]:-}"
+    
+    # Clean up temp file
+    rm -f "$tmpfile"
+    
+    # Validate new values
+    if [[ -z "$new_description" ]] || [[ -z "$new_type" ]] || [[ -z "$new_command" ]]; then
+        echo -e "${RED}Error: Description, type, and command cannot be empty${NC}" >&2
+        exit 1
+    fi
+    
+    # Validate type
+    if ! is_valid_type "$new_type"; then
+        echo -e "${YELLOW}Warning: '$new_type' is not in the list of standard types.${NC}"
+        echo -e "Standard types: ${CYAN}${VALID_TYPES[*]}${NC}"
+        
+        if ! get_user_confirmation "Do you want to continue with this custom type? (y/n): "; then
+            echo -e "${YELLOW}Operation cancelled.${NC}"
+            exit 0
+        fi
+    fi
+    
+    # Update the bookmark with timestamp
+    local modified
+    modified=$(date +"%Y-%m-%d %H:%M:%S")
+    
+    local updated_json
+    updated_json=$(jq --arg id "$id" \
+        --arg desc "$new_description" \
+        --arg type "$new_type" \
+        --arg cmd "$new_command" \
+        --arg tags "$new_tags" \
+        --arg notes "$new_notes" \
+        --arg modified "$modified" \
+        '.bookmarks = [.bookmarks[] | if .id == $id then .description = $desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
+    
+    echo "$updated_json" > "$BOOKMARKS_FILE"
+    echo -e "${GREEN}Bookmark updated: ${CYAN}$new_description${NC}"
+}
+
+# Create a new bookmark based on an existing one (modify-add)
+# Uses editor to modify the selected bookmark before saving as new
+modify_add_bookmark() {
+    echo -e "${BLUE}Select a bookmark to use as a template${NC}"
+    
+    # Use fzf to select a bookmark
+    local id_or_desc
+    id_or_desc=$(select_bookmark_with_fzf "Select bookmark to use as template")
+    if [[ $? -ne 0 ]] || [[ -z "$id_or_desc" ]]; then
+        echo -e "${YELLOW}No bookmark selected.${NC}"
+        exit 0
+    fi
+    
+    # Validate JSON file first
+    validate_bookmarks_file || exit 1
+    
+    # Find the bookmark using the optimized function
+    local bookmark
+    bookmark=$(get_bookmark_by_id_or_desc "$id_or_desc")
+    
+    if [[ -z "$bookmark" ]]; then
+        echo -e "${RED}No bookmark found with ID or description: $id_or_desc${NC}" >&2
+        exit 1
+    fi
+    
+    # Extract current values efficiently
+    local current_values
+    current_values=$(echo "$bookmark" | jq -r '[.description, .type, .command, .tags, .notes] | @tsv')
+    IFS=$'\t' read -r description type command tags notes <<< "$current_values"
+    
+    # Create temporary file for editing
+    local tmpfile
+    tmpfile=$(mktemp /tmp/bookmark_modify_add_XXXXXX.txt)
+    
+    # Write formatted bookmark to temp file
+    format_bookmark_for_editor "$description" "$type" "$command" "$tags" "$notes" > "$tmpfile"
+    
+    # Get editor command
+    local editor="${BOOKMARKS_EDITOR:-${EDITOR:-vi}}"
+    
+    echo -e "${BLUE}Opening editor to create new bookmark based on: ${CYAN}$description${NC}"
+    
+    # Open editor
+    if ! "$editor" "$tmpfile"; then
+        echo -e "${RED}Editor exited with error${NC}" >&2
+        rm -f "$tmpfile"
+        exit 1
+    fi
+    
+    # Parse edited content
+    local parsed_values
+    parsed_values=$(parse_bookmark_from_editor "$tmpfile")
+    
+    # Use mapfile to properly handle multiline values in tab-separated format
+    local -a values
+    IFS=$'\t' read -r -d '' -a values <<< "$parsed_values" || true
+    new_description="${values[0]:-}"
+    new_type="${values[1]:-}"
+    new_command="${values[2]:-}"
+    new_tags="${values[3]:-}"
+    new_notes="${values[4]:-}"
+    
+    # Clean up temp file
+    rm -f "$tmpfile"
+    
+    # Validate new values
+    if [[ -z "$new_description" ]] || [[ -z "$new_type" ]] || [[ -z "$new_command" ]]; then
+        echo -e "${RED}Error: Description, type, and command cannot be empty${NC}" >&2
+        exit 1
+    fi
+    
+    # Check if bookmark with new description already exists
+    if bookmark_exists "$new_description"; then
+        echo -e "${YELLOW}A bookmark with description '$new_description' already exists.${NC}"
+        
+        if get_user_confirmation "Do you want to update it instead? (y/n): "; then
+            # Find and update existing bookmark
+            local existing_bookmark
+            existing_bookmark=$(get_bookmark_by_id_or_desc "$new_description")
+            local existing_id
+            existing_id=$(echo "$existing_bookmark" | jq -r '.id')
+            
+            local modified
+            modified=$(date +"%Y-%m-%d %H:%M:%S")
+            
+            local updated_json
+            updated_json=$(jq --arg id "$existing_id" \
+                --arg desc "$new_description" \
+                --arg type "$new_type" \
+                --arg cmd "$new_command" \
+                --arg tags "$new_tags" \
+                --arg notes "$new_notes" \
+                --arg modified "$modified" \
+                '.bookmarks = [.bookmarks[] | if .id == $id then .description = $desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
+            
+            echo "$updated_json" > "$BOOKMARKS_FILE"
+            echo -e "${GREEN}Bookmark updated: ${CYAN}$new_description${NC}"
+            return
+        else
+            echo -e "${YELLOW}Operation cancelled.${NC}"
+            exit 0
+        fi
+    fi
+    
+    # Validate type
+    if ! is_valid_type "$new_type"; then
+        echo -e "${YELLOW}Warning: '$new_type' is not in the list of standard types.${NC}"
+        echo -e "Standard types: ${CYAN}${VALID_TYPES[*]}${NC}"
+        
+        if ! get_user_confirmation "Do you want to continue with this custom type? (y/n): "; then
+            echo -e "${YELLOW}Operation cancelled.${NC}"
+            exit 0
+        fi
+    fi
+    
+    # Create and add the new bookmark
+    local entry
+    entry=$(create_bookmark_entry "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes")
+    
+    local updated_json
+    updated_json=$(jq --argjson entry "$entry" '.bookmarks += [$entry]' "$BOOKMARKS_FILE")
+    echo "$updated_json" > "$BOOKMARKS_FILE"
+    
+    echo -e "${GREEN}New bookmark created: ${CYAN}$new_description${NC}"
+}
+
 #=============================================================================
 # USER INTERFACE FUNCTIONS
 #=============================================================================
@@ -473,9 +800,16 @@ get_new_values_for_editing() {
     printf "%s\t%s\t%s\t%s\t%s" "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes"
 }
 
-# Edit a bookmark interactively with improved modularity
+# Edit a bookmark interactively using the configured editor (default behavior)
 # Args: $1 - ID or description (optional, uses fzf if not provided)
 edit_bookmark() {
+    # Use the editor-based editing as the default
+    edit_bookmark_with_editor "$@"
+}
+
+# Edit a bookmark interactively with prompts (legacy mode)
+# Args: $1 - ID or description (optional, uses fzf if not provided)
+edit_bookmark_interactive() {
     local id_or_desc="${1:-}"
     
     # If no argument provided, use fzf to select
@@ -1054,7 +1388,8 @@ show_help() {
     echo -e "${GREEN}Usage: $script_name [command], where command can be one of${NC}"
     echo "  add \"Description\" type \"command\" [tags] [notes]   # Add a new bookmark"
     echo "  add                                       # Add a bookmark interactively"
-    echo "  edit [\"Description or ID\"]                   # Edit a bookmark interactively (uses fzf if no argument)"
+    echo "  edit [\"Description or ID\"]                   # Edit a bookmark using EDITOR (uses fzf if no argument)"
+    echo "  modify-add                                # Create new bookmark based on existing one"
     echo "  update \"Description\" type \"command\" [tags] [notes] # Update a bookmark"
     echo "  delete [\"Description or ID\"]                 # Delete a bookmark (uses fzf if no argument)"
     echo "  obsolete [\"Description or ID\"]               # Mark a bookmark as obsolete (uses fzf if no argument)"
@@ -1071,6 +1406,10 @@ show_help() {
     for type in "${VALID_TYPES[@]}"; do
         echo "  $type"
     done
+    echo ""
+    echo -e "${CYAN}Editor Configuration:${NC}"
+    echo "  Set BOOKMARKS_EDITOR or EDITOR environment variable to use your preferred editor"
+    echo "  Default: vi"
 }
 
 # Check if hooks directory exists, create it if not
@@ -1131,6 +1470,10 @@ case "${1:-}" in
     "edit")
         edit_bookmark "${2:-}"
         run_hook "after_edit"
+        ;;
+    "modify-add")
+        modify_add_bookmark
+        run_hook "after_add"
         ;;
     "update")
         if [ $# -lt 4 ]; then
