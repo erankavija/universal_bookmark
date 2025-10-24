@@ -396,12 +396,19 @@ When adding new commands:
 
 ## AI-Generated Content
 
-This project includes AI-generated content. When working with or modifying AI-generated code:
+This project includes AI-generated content (as noted in README.md: "The content is mostly AI generated"). When working with or modifying code in this project:
 
-1. **Review carefully**: Verify logic and correctness
-2. **Test thoroughly**: AI-generated code needs validation
-3. **Document clearly**: Explain any non-obvious solutions
-4. **Maintain consistency**: Ensure new code matches project style
+1. **Review carefully**: Verify logic and correctness of all code, especially when AI-generated patterns are present
+2. **Test thoroughly**: All code (AI-generated or not) requires comprehensive validation
+3. **Document clearly**: Explain any non-obvious solutions or complex logic
+4. **Maintain consistency**: Ensure new code matches the established project style regardless of origin
+5. **Human review required**: Even when using AI assistance, human verification and testing is essential before merging
+
+When contributing new code (with or without AI assistance):
+- Ensure it follows the patterns and conventions documented in this guide
+- Add appropriate tests to validate functionality
+- Update documentation to reflect changes
+- Be prepared to explain and defend your implementation choices
 
 ## Contributing Guidelines
 
@@ -435,7 +442,7 @@ not how. Reference issues if applicable.
 
 ## Resources
 
-- **jq Manual**: https://stedolan.github.io/jq/manual/
+- **jq Manual**: https://jqlang.github.io/jq/manual/
 - **fzf GitHub**: https://github.com/junegunn/fzf
 - **Bash Best Practices**: https://google.github.io/styleguide/shellguide.html
 - **ShellCheck**: https://www.shellcheck.net/ (for linting)
