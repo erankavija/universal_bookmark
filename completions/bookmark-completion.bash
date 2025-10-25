@@ -13,7 +13,7 @@ _bookmark_completion() {
     fi
     
     # Available commands
-    commands="add edit update delete obsolete list details tag backup restore help"
+    commands="add edit modify-add update delete obsolete list details tag backup restore help"
     
     # Bookmark types
     types="url pdf script ssh app cmd note folder file edit custom"
