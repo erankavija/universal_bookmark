@@ -37,6 +37,7 @@ _bookmark_commands() {
     local commands=(
         'add:Add a new bookmark'
         'edit:Edit an existing bookmark'
+        'modify-add:Create new bookmark based on existing one'
         'update:Update an existing bookmark'
         'delete:Delete a bookmark'
         'obsolete:Mark a bookmark as obsolete'
