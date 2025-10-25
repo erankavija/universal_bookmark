@@ -126,15 +126,43 @@ bookmark add "Open ChatGPT" url 'xdg-open "https://chat.openai.com/"' "ai tools 
 
 #### Editing Bookmarks
 
-Edit a bookmark interactively. If no description is provided, fzf will launch to select a bookmark:
+The default editing mode uses your configured editor (set via `BOOKMARKS_EDITOR` or `EDITOR` environment variables, defaults to `vi`). The editor opens with the bookmark data in a structured format with comments indicating allowed values:
+
 ```bash
 bookmark edit                    # Uses fzf to select a bookmark
 bookmark edit "Description"      # Edit a specific bookmark
 ```
-Or update directly:
+
+When the editor opens, you'll see:
+```
+# description
+Your bookmark description
+# type (allowed: url pdf script ssh app cmd note folder file edit custom)
+url
+# command
+https://example.com
+# tags
+your tags here
+# notes
+Your notes here
+```
+
+Edit any field, save, and exit. The bookmark will be updated with your changes. Multiline commands are supported.
+
+Or update directly without using an editor:
 ```bash
 bookmark update "Description" new-type "new-command" "new-tags" "new-notes"
 ```
+
+#### Creating from Existing Bookmarks
+
+Create a new bookmark based on an existing one using `modify-add`. This opens fzf to select a bookmark as a template, then opens your editor with that bookmark's data. Edit as needed and save to create a new bookmark:
+
+```bash
+bookmark modify-add              # Select template, edit, and save as new
+```
+
+This is useful when creating similar bookmarks with slight variations.
 
 #### Deleting or Marking Obsolete
 

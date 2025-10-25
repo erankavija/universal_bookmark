@@ -229,25 +229,44 @@ run_test_suite() {
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     fi
     
-    # Test fzf selection for edit command
-    echo -e "${BLUE}Testing fzf selection for edit command...${NC}"
+    # Test fzf selection for edit command (now uses editor)
+    echo -e "${BLUE}Testing edit command with editor...${NC}"
     # Add a test bookmark first
     ./bookmarks.sh add "Edit Test Bookmark" script "echo 'Edit test'" "edit test" > /dev/null 2>&1
     
-    # Simulate fzf selection using filter mode
-    {
-        echo ""  # Empty input for description (keep current)
-        echo ""  # Empty input for type (keep current)
-        echo "echo 'Edited command'"  # New command
-        echo ""  # Empty input for tags (keep current)
-        echo ""  # Empty input for notes (keep current)
-    } | ./bookmarks.sh edit "Edit Test Bookmark" > /dev/null 2>&1
+    # Create a mock editor for the test
+    local mock_editor=$(mktemp)
+    chmod +x "$mock_editor"
+    cat > "$mock_editor" << 'EDITEOF'
+#!/bin/bash
+# Mock editor that modifies the command
+input_file="$1"
+cat > "$input_file" << 'INNEREOF'
+# description
+Edit Test Bookmark
+# type (allowed: url pdf script ssh app cmd note folder file edit custom)
+script
+# command
+echo 'Edited command'
+# tags
+edit test
+# notes
+
+INNEREOF
+exit 0
+EDITEOF
+    
+    # Set the mock editor and run edit
+    export EDITOR="$mock_editor"
+    ./bookmarks.sh edit "Edit Test Bookmark" > /dev/null 2>&1
+    unset EDITOR
+    rm -f "$mock_editor"
     
     # Verify the bookmark was edited
     local edited_command=$(jq -r '.bookmarks[] | select(.description == "Edit Test Bookmark") | .command' "$TEST_BOOKMARKS_FILE")
     
     if [ "$edited_command" = "echo 'Edited command'" ]; then
-        echo -e "${GREEN}✓ Test passed: Edit command with direct argument${NC}"
+        echo -e "${GREEN}✓ Test passed: Edit command with editor${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     else
