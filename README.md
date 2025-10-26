@@ -7,6 +7,7 @@ Note: The content is mostly AI generated.
 ## Features
 
 - **Rich Bookmark Data**: Store descriptions, commands, types, tags, and notes
+- **Intelligent Sorting**: Frecency-based sorting (frequency + recency) shows your most-used bookmarks first
 - **Intuitive Management**: Add, edit, update, delete, and mark bookmarks as obsolete
 - **Advanced Searching**: Fuzzy search through bookmarks with colored output
 - **Tag Support**: Organize and search bookmarks by tags
@@ -14,7 +15,7 @@ Note: The content is mostly AI generated.
 - **Hooks**: Custom extensibility with hook scripts
 - **Cross-Shell Compatible**: Works with Bash, Zsh, Fish, and others
 
-A bookmark is stored in a JSON file with fields for ID, description, type, command, tags, notes, created date, and status. This provides much more flexibility and robustness compared to simple text files.
+A bookmark is stored in a JSON file with fields for ID, description, type, command, tags, notes, created date, status, and frecency-based usage tracking. This provides much more flexibility and robustness compared to simple text files.
 
 For example, a bookmark entry in the JSON file looks like this:
 
@@ -27,7 +28,10 @@ For example, a bookmark entry in the JSON file looks like this:
   "tags": "ai chat assistant",
   "notes": "OpenAI's ChatGPT interface",
   "created": "2023-10-01 15:30:45",
-  "status": "active"
+  "status": "active",
+  "access_count": 15,
+  "last_accessed": "2025-10-26 23:30:45",
+  "frecency_score": 142500
 }
 ```
 
@@ -179,6 +183,23 @@ bookmark obsolete "Description"  # Mark a specific bookmark as obsolete
 ```
 
 ### Advanced Features
+
+#### Frecency-Based Sorting
+
+Bookmarks are automatically sorted by "frecency" (frequency + recency), similar to how [z.sh](https://github.com/rupa/z) ranks directories. The system tracks:
+
+- **Access Count**: How many times you've executed each bookmark
+- **Last Accessed**: When you last used the bookmark  
+- **Frecency Score**: A computed score that prioritizes both frequently-used and recently-used bookmarks
+
+This means your most relevant bookmarks automatically appear at the top when using the fuzzy search interface, making it faster to access your commonly-used commands, URLs, and scripts.
+
+The frecency score is calculated using the formula:
+```
+frecency = 10000 × access_count × (3.75 / ((0.0001 × age_in_seconds + 1) + 0.25))
+```
+
+**Note**: Existing bookmarks are automatically migrated to support frecency tracking with zero initial scores.
 
 #### Detailed View
 
@@ -333,18 +354,24 @@ Universal Bookmarks includes built-in backup functionality:
 
 ## Testing
 
-Universal Bookmarks comes with a test suite to verify functionality. This is helpful for:
+Universal Bookmarks comes with comprehensive test suites to verify functionality. This is helpful for:
 - Confirming all features work after making changes
 - Verifying your installation is working correctly
 - Understanding the capabilities of the system
 
-Run the tests:
+Run the main test suite:
 
 ```bash
 ./test_bookmarks.sh
 ```
 
-The test suite creates a temporary environment, tests all main functions, and cleans up after itself.
+Run the frecency-specific tests:
+
+```bash
+./test_frecency.sh
+```
+
+The test suites create a temporary environment, test all functions, and clean up after themselves.
 
 ## Troubleshooting
 
