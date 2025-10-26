@@ -120,7 +120,22 @@ run_test_suite() {
          [ \"\$second_desc\" = 'Frecency Test 3' ]"
     
     # Test 8: Test backward compatibility - old bookmarks get migrated
-    echo '{"bookmarks":[{"id":"old_1","description":"Old Bookmark","type":"cmd","command":"echo old","tags":"","notes":"","created":"2023-01-01 00:00:00","status":"active"}]}' > "$TEST_BOOKMARKS_FILE"
+    cat > "$TEST_BOOKMARKS_FILE" <<'OLDFORMAT'
+{
+  "bookmarks": [
+    {
+      "id": "old_1",
+      "description": "Old Bookmark",
+      "type": "cmd",
+      "command": "echo old",
+      "tags": "",
+      "notes": "",
+      "created": "2023-01-01 00:00:00",
+      "status": "active"
+    }
+  ]
+}
+OLDFORMAT
     
     run_test "Old bookmarks get migrated with frecency fields" \
         "timeout 2 bash -c './bookmarks.sh 2>&1' || true && \
