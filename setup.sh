@@ -136,32 +136,103 @@ echo -e "${GREEN}Created backups directory: $HOME/.bookmarks/backups${NC}"
 # Get the script directory
 SCRIPT_DIR=$(get_script_dir)
 
+# Function to display proposed shell configuration changes
+show_proposed_changes() {
+    local rc_file="$1"
+    local script_dir="$2"
+    
+    echo -e "${CYAN}=== Proposed Changes to $rc_file ===${NC}"
+    echo ""
+    
+    if [[ "$rc_file" == *"fish"* ]]; then
+        echo -e "${YELLOW}The following lines will be added:${NC}"
+        echo ""
+        echo "# Universal Bookmarks configuration"
+        echo "set -x BOOKMARKS_DIR \"\$HOME/.bookmarks\""
+        echo "alias bookmark=\"$script_dir/bookmarks.sh\""
+    else
+        echo -e "${YELLOW}The following lines will be added:${NC}"
+        echo ""
+        echo "# Universal Bookmarks configuration"
+        echo "export BOOKMARKS_DIR=\"\$HOME/.bookmarks\""
+        echo "alias bookmark=\"$script_dir/bookmarks.sh\""
+    fi
+    
+    echo ""
+    echo -e "${CYAN}========================================${NC}"
+    echo ""
+}
+
+# Function to show and ask permission for completion configuration changes
+ask_completion_permission() {
+    local rc_file="$1"
+    local lines_to_add="$2"
+    
+    echo -e "${CYAN}=== Proposed Completion Changes to $rc_file ===${NC}"
+    echo ""
+    echo -e "${YELLOW}The following lines will be added:${NC}"
+    echo ""
+    echo "$lines_to_add"
+    echo ""
+    echo -e "${CYAN}========================================${NC}"
+    echo ""
+    
+    read -p "Do you want to add these completion lines to $rc_file? (y/n): " user_consent
+    if [[ "$user_consent" =~ ^[Yy]$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Handle fish shell differently
 if [[ "$RC_FILE" == *"fish"* ]]; then
     if ! grep -q "BOOKMARKS_DIR" "$RC_FILE" 2>/dev/null; then
-        echo '' >> "$RC_FILE"
-        echo '# Universal Bookmarks configuration' >> "$RC_FILE"
-        echo 'set -x BOOKMARKS_DIR "$HOME/.bookmarks"' >> "$RC_FILE"
-        echo "alias bookmark=\"$SCRIPT_DIR/bookmarks.sh\"" >> "$RC_FILE"
+        # Show proposed changes
+        show_proposed_changes "$RC_FILE" "$SCRIPT_DIR"
         
-        echo -e "${GREEN}Configuration added to $RC_FILE${NC}"
-        echo -e "${YELLOW}Please restart your shell or run 'source $RC_FILE'${NC}"
+        # Ask for permission
+        read -p "Do you want to add these lines to $RC_FILE? (y/n): " user_consent
+        if [[ "$user_consent" =~ ^[Yy]$ ]]; then
+            echo '' >> "$RC_FILE"
+            echo '# Universal Bookmarks configuration' >> "$RC_FILE"
+            echo 'set -x BOOKMARKS_DIR "$HOME/.bookmarks"' >> "$RC_FILE"
+            echo "alias bookmark=\"$SCRIPT_DIR/bookmarks.sh\"" >> "$RC_FILE"
+            
+            echo -e "${GREEN}Configuration added to $RC_FILE${NC}"
+            echo -e "${YELLOW}Please restart your shell or run 'source $RC_FILE'${NC}"
+        else
+            echo -e "${YELLOW}Configuration not added. You can manually add the following to $RC_FILE:${NC}"
+            echo 'set -x BOOKMARKS_DIR "$HOME/.bookmarks"'
+            echo "alias bookmark=\"$SCRIPT_DIR/bookmarks.sh\""
+        fi
     else
         echo -e "${YELLOW}Configuration already exists in $RC_FILE${NC}"
     fi
 else
     # Add environment variable and alias to shell configuration for bash/zsh and others
     if ! grep -q "BOOKMARKS_DIR" "$RC_FILE" 2>/dev/null; then
-        echo '' >> "$RC_FILE"
-        echo '# Universal Bookmarks configuration' >> "$RC_FILE"
-        echo 'export BOOKMARKS_DIR="$HOME/.bookmarks"' >> "$RC_FILE"
-        
         # Get the absolute path of the bookmarks.sh script without using realpath
         SCRIPT_PATH="$SCRIPT_DIR/bookmarks.sh"
-        echo "alias bookmark=\"$SCRIPT_PATH\"" >> "$RC_FILE"
         
-        echo -e "${GREEN}Configuration added to $RC_FILE${NC}"
-        echo -e "${YELLOW}Please restart your shell or run 'source $RC_FILE'${NC}"
+        # Show proposed changes
+        show_proposed_changes "$RC_FILE" "$SCRIPT_DIR"
+        
+        # Ask for permission
+        read -p "Do you want to add these lines to $RC_FILE? (y/n): " user_consent
+        if [[ "$user_consent" =~ ^[Yy]$ ]]; then
+            echo '' >> "$RC_FILE"
+            echo '# Universal Bookmarks configuration' >> "$RC_FILE"
+            echo 'export BOOKMARKS_DIR="$HOME/.bookmarks"' >> "$RC_FILE"
+            echo "alias bookmark=\"$SCRIPT_PATH\"" >> "$RC_FILE"
+            
+            echo -e "${GREEN}Configuration added to $RC_FILE${NC}"
+            echo -e "${YELLOW}Please restart your shell or run 'source $RC_FILE'${NC}"
+        else
+            echo -e "${YELLOW}Configuration not added. You can manually add the following to $RC_FILE:${NC}"
+            echo 'export BOOKMARKS_DIR="$HOME/.bookmarks"'
+            echo "alias bookmark=\"$SCRIPT_PATH\""
+        fi
     else
         echo -e "${YELLOW}Configuration already exists in $RC_FILE${NC}"
     fi
@@ -196,11 +267,20 @@ install_autocompletion() {
                         
                         # Add fpath to .zshrc if it's a custom directory
                         if [[ "$comp_dir" == "$HOME"* ]] && ! grep -q "fpath.*$comp_dir" "$HOME/.zshrc" 2>/dev/null; then
-                            echo '' >> "$HOME/.zshrc"
-                            echo "# Add custom completion directory to fpath" >> "$HOME/.zshrc"
-                            echo "fpath=(\"$comp_dir\" \$fpath)" >> "$HOME/.zshrc"
-                            echo "autoload -Uz compinit && compinit" >> "$HOME/.zshrc"
-                            echo -e "${GREEN}Added completion directory to .zshrc${NC}"
+                            local completion_lines="# Add custom completion directory to fpath
+fpath=(\"$comp_dir\" \$fpath)
+autoload -Uz compinit && compinit"
+                            
+                            if ask_completion_permission "$HOME/.zshrc" "$completion_lines"; then
+                                echo '' >> "$HOME/.zshrc"
+                                echo "# Add custom completion directory to fpath" >> "$HOME/.zshrc"
+                                echo "fpath=(\"$comp_dir\" \$fpath)" >> "$HOME/.zshrc"
+                                echo "autoload -Uz compinit && compinit" >> "$HOME/.zshrc"
+                                echo -e "${GREEN}Added completion directory to .zshrc${NC}"
+                            else
+                                echo -e "${YELLOW}Completion configuration not added. You can manually add the following to $HOME/.zshrc:${NC}"
+                                echo "$completion_lines"
+                            fi
                         fi
                         break
                     }
@@ -215,11 +295,20 @@ install_autocompletion() {
             echo -e "${GREEN}Installed zsh completion to: $HOME/.zsh/completions/_bookmark${NC}"
             
             if ! grep -q "fpath.*/.zsh/completions" "$HOME/.zshrc" 2>/dev/null; then
-                echo '' >> "$HOME/.zshrc"
-                echo "# Add custom completion directory to fpath" >> "$HOME/.zshrc"
-                echo "fpath=(\"\$HOME/.zsh/completions\" \$fpath)" >> "$HOME/.zshrc"
-                echo "autoload -Uz compinit && compinit" >> "$HOME/.zshrc"
-                echo -e "${GREEN}Added completion directory to .zshrc${NC}"
+                local completion_lines="# Add custom completion directory to fpath
+fpath=(\"\$HOME/.zsh/completions\" \$fpath)
+autoload -Uz compinit && compinit"
+                
+                if ask_completion_permission "$HOME/.zshrc" "$completion_lines"; then
+                    echo '' >> "$HOME/.zshrc"
+                    echo "# Add custom completion directory to fpath" >> "$HOME/.zshrc"
+                    echo "fpath=(\"\$HOME/.zsh/completions\" \$fpath)" >> "$HOME/.zshrc"
+                    echo "autoload -Uz compinit && compinit" >> "$HOME/.zshrc"
+                    echo -e "${GREEN}Added completion directory to .zshrc${NC}"
+                else
+                    echo -e "${YELLOW}Completion configuration not added. You can manually add the following to $HOME/.zshrc:${NC}"
+                    echo "$completion_lines"
+                fi
             fi
             autocomp_installed=true
         fi
@@ -255,11 +344,19 @@ install_autocompletion() {
         if [[ "$autocomp_installed" == false ]]; then
             # Fallback: source completion directly in .bashrc
             if ! grep -q "bookmark-completion.bash" "$HOME/.bashrc" 2>/dev/null; then
-                echo '' >> "$HOME/.bashrc"
-                echo "# Universal Bookmarks completion" >> "$HOME/.bashrc"
-                echo "source \"$SCRIPT_DIR/completions/bookmark-completion.bash\"" >> "$HOME/.bashrc"
-                echo -e "${GREEN}Added completion source to .bashrc${NC}"
-                autocomp_installed=true
+                local completion_lines="# Universal Bookmarks completion
+source \"$SCRIPT_DIR/completions/bookmark-completion.bash\""
+                
+                if ask_completion_permission "$HOME/.bashrc" "$completion_lines"; then
+                    echo '' >> "$HOME/.bashrc"
+                    echo "# Universal Bookmarks completion" >> "$HOME/.bashrc"
+                    echo "source \"$SCRIPT_DIR/completions/bookmark-completion.bash\"" >> "$HOME/.bashrc"
+                    echo -e "${GREEN}Added completion source to .bashrc${NC}"
+                    autocomp_installed=true
+                else
+                    echo -e "${YELLOW}Completion configuration not added. You can manually add the following to $HOME/.bashrc:${NC}"
+                    echo "$completion_lines"
+                fi
             fi
         fi
     fi
