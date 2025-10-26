@@ -687,7 +687,7 @@ select_bookmark_with_fzf() {
     
     # Use fzf for interactive selection
     local selected
-    selected=$(echo "$formatted_bookmarks" | fzf --ansi --height 40% --border --prompt="$prompt: ")
+    selected=$(echo "$formatted_bookmarks" | fzf --ansi --border --prompt="$prompt: ")
     
     if [[ -z "$selected" ]]; then
         return 1
@@ -1108,7 +1108,7 @@ list_bookmarks() {
     local selected
     if [[ -z "$search_term" ]]; then
         # No search term provided, use fzf for interactive selection
-        selected=$(echo "$formatted_bookmarks" | fzf --ansi --height 40% --border)
+        selected=$(echo "$formatted_bookmarks" | fzf --ansi --border)
     else
         # Use the search term with fzf filter
         selected=$(echo "$formatted_bookmarks" | fzf --ansi --filter="$search_term" | head -1)
