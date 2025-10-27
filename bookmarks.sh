@@ -268,8 +268,8 @@ recalculate_all_frecency() {
         return 0
     fi
     
-    # Ensure lock is removed on exit
-    trap "rmdir '$lock_file' 2>/dev/null || true" EXIT
+    # We acquired the lock, ensure it's removed on exit/error
+    trap "rmdir '$lock_file' 2>/dev/null || true" RETURN
     
     local updated_json
     updated_json=$(jq '.bookmarks |= map(
@@ -1257,7 +1257,8 @@ execute_selected_bookmark() {
     
     # Recalculate all frecency scores in the background to avoid blocking
     # This ensures scores stay up-to-date without slowing down execution
-    (recalculate_all_frecency > /dev/null 2>&1 &)
+    # Errors are logged to a file for debugging
+    (recalculate_all_frecency 2>> "$BOOKMARKS_DIR/frecency_errors.log" > /dev/null &)
     
     # Execute the command based on bookmark type
     execute_bookmark_by_type "$type" "$command" "$description"
