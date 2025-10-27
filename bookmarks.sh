@@ -264,9 +264,24 @@ recalculate_all_frecency() {
     
     # Clean up stale locks (older than 60 seconds)
     if [ -d "$lock_file" ]; then
-        local lock_age=$(($(date +%s) - $(stat -c %Y "$lock_file" 2>/dev/null || stat -f %m "$lock_file" 2>/dev/null || echo 0)))
-        if [ "$lock_age" -gt 60 ]; then
-            rmdir "$lock_file" 2>/dev/null || true
+        # Get lock file modification time (portable for Linux and macOS)
+        # Linux uses: stat -c %Y
+        # macOS uses: stat -f %m
+        local lock_mtime
+        if lock_mtime=$(stat -c %Y "$lock_file" 2>/dev/null); then
+            : # Linux succeeded
+        elif lock_mtime=$(stat -f %m "$lock_file" 2>/dev/null); then
+            : # macOS succeeded
+        else
+            # stat failed, skip stale lock cleanup to be safe
+            lock_mtime=""
+        fi
+        
+        if [ -n "$lock_mtime" ]; then
+            local lock_age=$(($(date +%s) - lock_mtime))
+            if [ "$lock_age" -gt 60 ]; then
+                rmdir "$lock_file" 2>/dev/null || true
+            fi
         fi
     fi
     
