@@ -259,6 +259,41 @@ update_bookmark_access() {
 recalculate_all_frecency() {
     validate_bookmarks_file || return 1
     
+    # Use a lock file to prevent concurrent recalculations
+    local lock_file="$BOOKMARKS_DIR/.frecency_recalc.lock"
+    
+    # Clean up stale locks (older than 60 seconds)
+    if [ -d "$lock_file" ]; then
+        # Get lock file modification time (portable for Linux and macOS)
+        # Linux uses: stat -c %Y
+        # macOS uses: stat -f %m
+        local lock_mtime
+        if lock_mtime=$(stat -c %Y "$lock_file" 2>/dev/null); then
+            : # Linux succeeded
+        elif lock_mtime=$(stat -f %m "$lock_file" 2>/dev/null); then
+            : # macOS succeeded
+        else
+            # stat failed, skip stale lock cleanup to be safe
+            lock_mtime=""
+        fi
+        
+        if [ -n "$lock_mtime" ]; then
+            local lock_age=$(($(date +%s) - lock_mtime))
+            if [ "$lock_age" -gt 60 ]; then
+                rmdir "$lock_file" 2>/dev/null || true
+            fi
+        fi
+    fi
+    
+    # Try to acquire lock (non-blocking)
+    if ! mkdir "$lock_file" 2>/dev/null; then
+        # Another process is already recalculating, skip this run
+        return 0
+    fi
+    
+    # We acquired the lock, ensure it's removed on exit/error
+    trap "rmdir '$lock_file' 2>/dev/null || true" RETURN
+    
     local updated_json
     updated_json=$(jq '.bookmarks |= map(
         . as $bookmark |
@@ -795,9 +830,6 @@ format_bookmarks_for_display() {
     # Ensure schema is migrated for backward compatibility
     migrate_bookmarks_schema > /dev/null 2>&1
     
-    # Ensure frecency scores are up to date before displaying
-    recalculate_all_frecency > /dev/null 2>&1
-    
     # Single jq call to get all necessary data, sort by frecency, and format it
     jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | 
         (if .status == "obsolete" then "[OBSOLETE] " else "" end) + 
@@ -1245,6 +1277,11 @@ execute_selected_bookmark() {
     
     # Update access statistics before executing
     update_bookmark_access "$description"
+    
+    # Recalculate all frecency scores in the background to avoid blocking
+    # This ensures scores stay up-to-date without slowing down execution
+    # Errors are logged to a file for debugging
+    (recalculate_all_frecency 2>> "$BOOKMARKS_DIR/frecency_errors.log" > /dev/null &)
     
     # Execute the command based on bookmark type
     execute_bookmark_by_type "$type" "$command" "$description"
