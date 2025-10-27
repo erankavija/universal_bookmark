@@ -795,9 +795,6 @@ format_bookmarks_for_display() {
     # Ensure schema is migrated for backward compatibility
     migrate_bookmarks_schema > /dev/null 2>&1
     
-    # Ensure frecency scores are up to date before displaying
-    recalculate_all_frecency > /dev/null 2>&1
-    
     # Single jq call to get all necessary data, sort by frecency, and format it
     jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | 
         (if .status == "obsolete" then "[OBSOLETE] " else "" end) + 
@@ -1245,6 +1242,10 @@ execute_selected_bookmark() {
     
     # Update access statistics before executing
     update_bookmark_access "$description"
+    
+    # Recalculate all frecency scores in the background to avoid blocking
+    # This ensures scores stay up-to-date without slowing down execution
+    (recalculate_all_frecency > /dev/null 2>&1 &)
     
     # Execute the command based on bookmark type
     execute_bookmark_by_type "$type" "$command" "$description"
