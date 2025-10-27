@@ -259,6 +259,18 @@ update_bookmark_access() {
 recalculate_all_frecency() {
     validate_bookmarks_file || return 1
     
+    # Use a lock file to prevent concurrent recalculations
+    local lock_file="$BOOKMARKS_DIR/.frecency_recalc.lock"
+    
+    # Try to acquire lock (non-blocking)
+    if ! mkdir "$lock_file" 2>/dev/null; then
+        # Another process is already recalculating, skip this run
+        return 0
+    fi
+    
+    # Ensure lock is removed on exit
+    trap "rmdir '$lock_file' 2>/dev/null || true" EXIT
+    
     local updated_json
     updated_json=$(jq '.bookmarks |= map(
         . as $bookmark |
