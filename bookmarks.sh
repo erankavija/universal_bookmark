@@ -65,6 +65,8 @@ if [ ! -f "$BOOKMARKS_FILE" ] || [ ! -s "$BOOKMARKS_FILE" ]; then
     echo -e "${GREEN}Created bookmarks file: $BOOKMARKS_FILE${NC}"
 fi
 
+# Note: migrate_bookmarks_schema is called within format_bookmarks_for_display to ensure schema is migrated before use
+
 
 #=============================================================================
 # UTILITY FUNCTIONS
@@ -124,6 +126,29 @@ validate_bookmarks_file() {
     return 0
 }
 
+# Migrate bookmarks to add frecency fields if they don't exist
+# This ensures backward compatibility with older bookmark files
+migrate_bookmarks_schema() {
+    validate_bookmarks_file || return 1
+    
+    # Check if migration is needed (check if any bookmark lacks the new fields)
+    local needs_migration
+    needs_migration=$(jq '.bookmarks | map(select(has("access_count") | not)) | length > 0' "$BOOKMARKS_FILE")
+    
+    if [[ "$needs_migration" == "true" ]]; then
+        local updated_json
+        updated_json=$(jq '.bookmarks |= map(
+            . + {
+                access_count: (.access_count // 0),
+                last_accessed: (.last_accessed // null),
+                frecency_score: (.frecency_score // 0)
+            }
+        )' "$BOOKMARKS_FILE")
+        
+        echo "$updated_json" > "$BOOKMARKS_FILE"
+    fi
+}
+
 # Get user confirmation (respects NON_INTERACTIVE flag)
 # Args: $1 - prompt message, $2 - default response (optional)
 # Returns: 0 for yes, 1 for no
@@ -139,6 +164,135 @@ get_user_confirmation() {
     read -p "$prompt" response
     response="${response:-$default}"
     [[ "$response" =~ ^[Yy]$ ]]
+}
+
+# Calculate frecency score based on frequency (rank) and recency (time)
+# Args: $1 - access_count (rank), $2 - last_accessed timestamp
+# Returns: frecency score as an integer
+# Formula: 10000 * rank * (3.75 / ((0.0001 * age_in_seconds + 1) + 0.25))
+calculate_frecency() {
+    local access_count="$1"
+    local last_accessed="$2"
+    local current_time
+    current_time=$(date +%s)
+    
+    # If never accessed, return 0
+    if [[ -z "$last_accessed" ]] || [[ "$last_accessed" == "null" ]]; then
+        echo "0"
+        return
+    fi
+    
+    # Convert last_accessed to epoch time if it's in date format
+    local last_accessed_epoch
+    if [[ "$last_accessed" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2} ]]; then
+        last_accessed_epoch=$(date -d "$last_accessed" +%s 2>/dev/null || echo "0")
+    else
+        last_accessed_epoch="$last_accessed"
+    fi
+    
+    # Calculate age in seconds
+    local age=$((current_time - last_accessed_epoch))
+    
+    # Calculate frecency using the z.sh formula
+    # frecency = 10000 * rank * (3.75 / ((0.0001 * age + 1) + 0.25))
+    # Using awk for floating point arithmetic
+    local frecency
+    frecency=$(awk -v rank="$access_count" -v age="$age" 'BEGIN {
+        printf "%.0f", 10000 * rank * (3.75 / ((0.0001 * age + 1) + 0.25))
+    }')
+    
+    echo "$frecency"
+}
+
+# Update bookmark access statistics when it's executed
+# Args: $1 - bookmark ID or description
+update_bookmark_access() {
+    local id_or_desc="$1"
+    
+    # Find the bookmark
+    local bookmark
+    bookmark=$(get_bookmark_by_id_or_desc "$id_or_desc")
+    
+    if [[ -z "$bookmark" ]]; then
+        return 1
+    fi
+    
+    # Extract current values
+    local bookmark_data
+    bookmark_data=$(echo "$bookmark" | jq -r '[.id, .access_count // 0] | @tsv')
+    IFS=$'\t' read -r id current_count <<< "$bookmark_data"
+    
+    # Increment access count
+    local new_count=$((current_count + 1))
+    
+    # Get current timestamp
+    local now
+    now=$(date +"%Y-%m-%d %H:%M:%S")
+    
+    # Calculate new frecency score
+    local frecency
+    frecency=$(calculate_frecency "$new_count" "$now")
+    
+    # Update the bookmark
+    local updated_json
+    if [[ "$id_or_desc" == *"_"* ]]; then
+        # Update by ID
+        updated_json=$(jq --arg id "$id" \
+            --argjson count "$new_count" \
+            --arg accessed "$now" \
+            --argjson score "$frecency" \
+            '.bookmarks = [.bookmarks[] | if .id == $id then .access_count = $count | .last_accessed = $accessed | .frecency_score = $score else . end]' "$BOOKMARKS_FILE")
+    else
+        # Update by description
+        updated_json=$(jq --arg desc "$id_or_desc" \
+            --argjson count "$new_count" \
+            --arg accessed "$now" \
+            --argjson score "$frecency" \
+            '.bookmarks = [.bookmarks[] | if .description == $desc then .access_count = $count | .last_accessed = $accessed | .frecency_score = $score else . end]' "$BOOKMARKS_FILE")
+    fi
+    
+    echo "$updated_json" > "$BOOKMARKS_FILE"
+}
+
+# Recalculate frecency scores for all bookmarks
+# This is useful for updating scores after time has passed
+recalculate_all_frecency() {
+    validate_bookmarks_file || return 1
+    
+    local updated_json
+    updated_json=$(jq '.bookmarks |= map(
+        . as $bookmark |
+        if (.access_count // 0) > 0 and .last_accessed != null then
+            . + {frecency_score: (
+                if .last_accessed == null then 0
+                else
+                    # This is a placeholder - actual calculation done in shell
+                    .frecency_score // 0
+                end
+            )}
+        else
+            . + {frecency_score: 0}
+        end
+    )' "$BOOKMARKS_FILE")
+    
+    # Now calculate actual frecency for each bookmark
+    local bookmarks_json
+    bookmarks_json=$(echo "$updated_json" | jq -c '.bookmarks[]')
+    
+    local result='{"bookmarks":[]}'
+    while IFS= read -r bookmark; do
+        local access_count last_accessed
+        access_count=$(echo "$bookmark" | jq -r '.access_count // 0')
+        last_accessed=$(echo "$bookmark" | jq -r '.last_accessed // "null"')
+        
+        local frecency
+        frecency=$(calculate_frecency "$access_count" "$last_accessed")
+        
+        bookmark=$(echo "$bookmark" | jq --argjson score "$frecency" '. + {frecency_score: $score}')
+        result=$(echo "$result" | jq --argjson bookmark "$bookmark" '.bookmarks += [$bookmark]')
+    done <<< "$bookmarks_json"
+    
+    echo "$result" > "$BOOKMARKS_FILE"
 }
 
 #=============================================================================
@@ -203,7 +357,7 @@ create_bookmark_entry() {
         --arg tags "$tags" \
         --arg notes "$notes" \
         --arg created "$created" \
-        '{id: $id, description: $desc, type: $type, command: $cmd, tags: $tags, notes: $notes, created: $created, status: "active"}'
+        '{id: $id, description: $desc, type: $type, command: $cmd, tags: $tags, notes: $notes, created: $created, status: "active", access_count: 0, last_accessed: null, frecency_score: 0}'
 }
 
 # Add a new bookmark with improved validation and modularity
@@ -635,11 +789,17 @@ modify_add_bookmark() {
 # USER INTERFACE FUNCTIONS
 #=============================================================================
 
-# Format bookmark data for display (optimized single jq call)
-# Returns: formatted bookmark list for fzf
+# Format bookmark data for display (optimized single jq call with frecency sorting)
+# Returns: formatted bookmark list for fzf, sorted by frecency score
 format_bookmarks_for_display() {
-    # Single jq call to get all necessary data and format it
-    jq -r '.bookmarks[] | 
+    # Ensure schema is migrated for backward compatibility
+    migrate_bookmarks_schema > /dev/null 2>&1
+    
+    # Ensure frecency scores are up to date before displaying
+    recalculate_all_frecency > /dev/null 2>&1
+    
+    # Single jq call to get all necessary data, sort by frecency, and format it
+    jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | 
         (if .status == "obsolete" then "[OBSOLETE] " else "" end) + 
         "[" + .type + "] " + .description + 
         "|" + .id + 
@@ -1082,6 +1242,9 @@ execute_selected_bookmark() {
     echo -e "${GREEN}Executing: ${CYAN}$description${NC}"
     echo -e "${BLUE}Type: ${NC}$type"
     echo -e "${BLUE}Command: ${NC}$command"
+    
+    # Update access statistics before executing
+    update_bookmark_access "$description"
     
     # Execute the command based on bookmark type
     execute_bookmark_by_type "$type" "$command" "$description"
