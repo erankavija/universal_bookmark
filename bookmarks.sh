@@ -262,6 +262,14 @@ recalculate_all_frecency() {
     # Use a lock file to prevent concurrent recalculations
     local lock_file="$BOOKMARKS_DIR/.frecency_recalc.lock"
     
+    # Clean up stale locks (older than 60 seconds)
+    if [ -d "$lock_file" ]; then
+        local lock_age=$(($(date +%s) - $(stat -c %Y "$lock_file" 2>/dev/null || stat -f %m "$lock_file" 2>/dev/null || echo 0)))
+        if [ "$lock_age" -gt 60 ]; then
+            rmdir "$lock_file" 2>/dev/null || true
+        fi
+    fi
+    
     # Try to acquire lock (non-blocking)
     if ! mkdir "$lock_file" 2>/dev/null; then
         # Another process is already recalculating, skip this run
