@@ -298,7 +298,7 @@ run_test_suite() {
     local real_id
     real_id=$(jq -r '.bookmarks[] | select(.description == "Test for ID") | .id' "$TEST_BOOKMARKS_FILE")
     
-    if [[ "$real_id" =~ ^[0-9]{10}_[a-zA-Z0-9]{6}$ ]]; then
+    if [[ "$real_id" =~ ^[0-9]{10,}_[a-zA-Z0-9]{6}$ ]]; then
         echo -e "${GREEN}✓ Real ID format is correct: $real_id${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         

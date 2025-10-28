@@ -98,10 +98,10 @@ get_bookmark_by_id_or_desc() {
     local id_or_desc="$1"
     
     # ID format: timestamp_randomstring (e.g., 1633042516_a3b2c1)
-    # - Timestamp: 10 digits
+    # - Timestamp: Unix timestamp (10+ digits, currently 10 but will be 11 around year 2286)
     # - Underscore separator
     # - Random string: 6 alphanumeric characters
-    if [[ "$id_or_desc" =~ ^[0-9]{10}_[a-zA-Z0-9]{6}$ ]]; then
+    if [[ "$id_or_desc" =~ ^[0-9]{10,}_[a-zA-Z0-9]{6}$ ]]; then
         # Looks like an ID
         jq -r --arg id "$id_or_desc" '.bookmarks[] | select(.id == $id)' "$BOOKMARKS_FILE"
     else
@@ -239,7 +239,7 @@ update_bookmark_access() {
     
     # Update the bookmark
     local updated_json
-    if [[ "$id_or_desc" =~ ^[0-9]{10}_[a-zA-Z0-9]{6}$ ]]; then
+    if [[ "$id_or_desc" =~ ^[0-9]{10,}_[a-zA-Z0-9]{6}$ ]]; then
         # Update by ID
         updated_json=$(jq --arg id "$id" \
             --argjson count "$new_count" \
@@ -1095,7 +1095,7 @@ delete_bookmark() {
     if get_user_confirmation "Are you sure? (y/n): "; then
         # Delete the bookmark (determine method based on ID format)
         local updated_json
-        if [[ "$id_or_desc" =~ ^[0-9]{10}_[a-zA-Z0-9]{6}$ ]]; then
+        if [[ "$id_or_desc" =~ ^[0-9]{10,}_[a-zA-Z0-9]{6}$ ]]; then
             # Delete by ID
             updated_json=$(jq --arg id "$id_or_desc" '.bookmarks = [.bookmarks[] | select(.id != $id)]' "$BOOKMARKS_FILE")
         else
@@ -1167,7 +1167,7 @@ obsolete_bookmark() {
     
     # Update the bookmark status
     local updated_json
-    if [[ "$id_or_desc" =~ ^[0-9]{10}_[a-zA-Z0-9]{6}$ ]]; then
+    if [[ "$id_or_desc" =~ ^[0-9]{10,}_[a-zA-Z0-9]{6}$ ]]; then
         # Update by ID
         updated_json=$(jq --arg id "$id_or_desc" --arg status "$new_status" \
             '.bookmarks = [.bookmarks[] | if .id == $id then .status = $status else . end]' "$BOOKMARKS_FILE")
