@@ -829,22 +829,45 @@ modify_add_bookmark() {
 #=============================================================================
 
 # Format bookmark data for display (optimized single jq call with frecency sorting)
+# Args: $1 - include_obsolete flag ("true" to include obsolete bookmarks, default "false")
 # Returns: formatted bookmark list for fzf, sorted by frecency score
 format_bookmarks_for_display() {
+    local include_obsolete="${1:-false}"
+    
     # Ensure schema is migrated for backward compatibility
     migrate_bookmarks_schema > /dev/null 2>&1
     
     # Single jq call to get all necessary data, sort by frecency, and format it
-    jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | 
-        (if .status == "obsolete" then "[OBSOLETE] " else "" end) + 
-        "[" + .type + "] " + .description + 
-        "|" + .id + 
-        "|" + .command + 
-        "|" + .status' "$BOOKMARKS_FILE" | \
-    while IFS="|" read -r display_line id command status; do
-        if [[ "$status" == "obsolete" ]]; then
-            echo -e "${RED}$display_line${NC}"
-        else
+    # Filter obsolete bookmarks unless explicitly included
+    if [[ "$include_obsolete" == "true" ]]; then
+        jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | 
+            (if .status == "obsolete" then "[OBSOLETE] " else "" end) + 
+            "[" + .type + "] " + .description + 
+            "|" + .id + 
+            "|" + .command + 
+            "|" + .status' "$BOOKMARKS_FILE" | \
+        while IFS="|" read -r display_line id command status; do
+            if [[ "$status" == "obsolete" ]]; then
+                echo -e "${RED}$display_line${NC}"
+            else
+                # Extract type and description for coloring
+                if [[ "$display_line" =~ ^\[([^\]]+)\]\ (.*)$ ]]; then
+                    local type="${BASH_REMATCH[1]}"
+                    local description="${BASH_REMATCH[2]}"
+                    echo -e "${CYAN}[${type}]${NC} ${YELLOW}${description}${NC}"
+                else
+                    echo "$display_line"
+                fi
+            fi
+        done
+    else
+        # Filter out obsolete bookmarks
+        jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | select(.status != "obsolete") | 
+            "[" + .type + "] " + .description + 
+            "|" + .id + 
+            "|" + .command + 
+            "|" + .status' "$BOOKMARKS_FILE" | \
+        while IFS="|" read -r display_line id command status; do
             # Extract type and description for coloring
             if [[ "$display_line" =~ ^\[([^\]]+)\]\ (.*)$ ]]; then
                 local type="${BASH_REMATCH[1]}"
@@ -853,8 +876,8 @@ format_bookmarks_for_display() {
             else
                 echo "$display_line"
             fi
-        fi
-    done
+        done
+    fi
 }
 
 # Extract description from formatted fzf line
@@ -1332,6 +1355,119 @@ list_bookmarks() {
     fi
 }
 
+# List and execute bookmarks with detailed preview in fzf
+# Shows all bookmarks including obsolete ones with a preview pane
+# Args: $1 - search term (optional)
+list_bookmarks_with_details() {
+    local search_term="${1:-}"
+    
+    # Validate JSON file first
+    validate_bookmarks_file || return 1
+    
+    # Get formatted bookmarks for display (including obsolete)
+    local formatted_bookmarks
+    formatted_bookmarks=$(format_bookmarks_for_display "true")
+    
+    if [[ -z "$formatted_bookmarks" ]]; then
+        echo -e "${YELLOW}No bookmarks found.${NC}"
+        return
+    fi
+    
+    # Create a preview command that extracts and formats bookmark details using jq
+    local preview_cmd="echo {} | sed -E 's/\\x1B\\[[0-9;]*[mK]//g' | sed -E 's/^\\[OBSOLETE\\] \\[(.*)\\] (.*)/\\2/' | sed -E 's/^\\[(.*)\\] (.*)/\\2/' | xargs -I DESC jq -r --arg desc \"DESC\" '.bookmarks[] | select(.description == \$desc) | \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📋 BOOKMARK DETAILS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\nDescription: \" + .description + \"\\nType:        \" + .type + \"\\nStatus:      \" + .status + \"\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n💻 COMMAND\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .command + \"\\n\\n\" + (if .tags != \"\" and .tags != null then \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n🏷️  TAGS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .tags + \"\\n\\n\" else \"\" end) + (if .notes != \"\" and .notes != null then \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📝 NOTES\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .notes + \"\\n\\n\" else \"\" end) + \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📊 METADATA\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nID:          \" + .id + \"\\nCreated:     \" + (.created // \"\") + (if .modified != \"\" and .modified != null then \"\\nModified:    \" + .modified else \"\" end) + \"\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📈 USAGE STATISTICS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nAccess Count:    \" + (.access_count // 0 | tostring) + (if .last_accessed != \"\" and .last_accessed != null then \"\\nLast Accessed:   \" + .last_accessed else \"\" end) + \"\\nFrecency Score:  \" + (.frecency_score // 0 | tostring) + \"\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"' \"$BOOKMARKS_FILE\""
+    
+    # Select bookmark with fzf including preview
+    local selected
+    if [[ -z "$search_term" ]]; then
+        # No search term provided, use fzf for interactive selection with preview
+        selected=$(echo "$formatted_bookmarks" | \
+            fzf --ansi --border \
+                --preview "$preview_cmd" \
+                --preview-window=right:60%:wrap \
+                --header="Select bookmark (obsolete bookmarks shown in red)")
+    else
+        # Use the search term with fzf filter
+        selected=$(echo "$formatted_bookmarks" | fzf --ansi --filter="$search_term" | head -1)
+    fi
+    
+    if [[ -n "$selected" ]]; then
+        # Extract the description from the formatted line
+        local description
+        description=$(extract_description_from_fzf_line "$selected")
+        
+        # Get the bookmark data using optimized function
+        local bookmark
+        bookmark=$(get_bookmark_by_id_or_desc "$description")
+        
+        # Execute the selected bookmark
+        execute_selected_bookmark "$bookmark" "$description"
+    fi
+}
+
+# Format single bookmark details for fzf preview
+# Args: $1 - description to look up
+# Returns: formatted bookmark details
+format_bookmark_details_for_preview() {
+    local description="$1"
+    
+    # Get bookmark by description
+    local bookmark
+    bookmark=$(get_bookmark_by_id_or_desc "$description")
+    
+    if [[ -z "$bookmark" ]]; then
+        echo "Bookmark not found"
+        return 1
+    fi
+    
+    # Extract all fields efficiently
+    local values
+    values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags, .notes, .created, .modified // "", .status, .access_count // 0, .last_accessed // "", .frecency_score // 0] | @tsv')
+    IFS=$'\t' read -r id description type command tags notes created modified status access_count last_accessed frecency_score <<< "$values"
+    
+    # Format the output with clear labels using RST-style underlines
+    echo "BOOKMARK DETAILS"
+    echo "================"
+    echo ""
+    echo "Description: $description"
+    echo "Type:        $type"
+    echo "Status:      $status"
+    echo ""
+    echo "COMMAND"
+    echo "-------"
+    echo "$command"
+    echo ""
+    
+    if [[ -n "$tags" ]]; then
+        echo "TAGS"
+        echo "----"
+        echo "$tags"
+        echo ""
+    fi
+    
+    if [[ -n "$notes" ]]; then
+        echo "NOTES"
+        echo "-----"
+        echo "$notes"
+        echo ""
+    fi
+    
+    echo "METADATA"
+    echo "--------"
+    echo "ID:          $id"
+    echo "Created:     $created"
+    if [[ -n "$modified" ]]; then
+        echo "Modified:    $modified"
+    fi
+    echo ""
+    echo "USAGE STATISTICS"
+    echo "----------------"
+    echo "Access Count:    $access_count"
+    if [[ -n "$last_accessed" && "$last_accessed" != "null" ]]; then
+        echo "Last Accessed:   $last_accessed"
+    fi
+    echo "Frecency Score:  $frecency_score"
+}
+
 # Display bookmarks grouped by type with color coding
 display_bookmarks_by_type() {
     # Single optimized jq call to group and format bookmarks
@@ -1598,7 +1734,7 @@ show_help() {
     echo "  delete [\"Description or ID\"]                 # Delete a bookmark (uses fzf if no argument)"
     echo "  obsolete [\"Description or ID\"]               # Mark a bookmark as obsolete (uses fzf if no argument)"
     echo "  list                                      # List all bookmarks without executing"
-    echo "  details                                   # List all bookmarks with details"
+    echo "  details [search term]                     # Search and execute bookmarks with preview (includes obsolete)"
     echo "  tag \"tag\"                                # Search bookmarks by tag"
     echo "  backup                                    # Create a backup of bookmarks"
     echo "  restore                                   # Restore from a backup"
@@ -1699,7 +1835,7 @@ case "${1:-}" in
         list_all_bookmarks "false"
         ;;
     "details")
-        list_all_bookmarks "true"
+        list_bookmarks_with_details "${2:-}"
         ;;
     "tag")
         if [ $# -lt 2 ]; then
