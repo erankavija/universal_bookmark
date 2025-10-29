@@ -251,6 +251,37 @@ EDITEOF
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
     fi
     
+    # Test restore from backup with NON_INTERACTIVE flag
+    echo -e "${BLUE}Testing restore from backup with -y flag...${NC}"
+    
+    # First, create a backup
+    ./bookmarks.sh backup > /dev/null 2>&1
+    
+    # Modify the bookmarks file
+    ./bookmarks.sh add "Restore Test Bookmark" script "echo 'Before restore'" > /dev/null 2>&1
+    
+    # Count bookmarks before restore
+    local bookmarks_before_restore=$(jq '.bookmarks | length' "$TEST_BOOKMARKS_FILE")
+    
+    # Restore from backup using -y flag (should auto-select first backup and auto-confirm)
+    ./bookmarks.sh -y restore > /dev/null 2>&1
+    
+    # Count bookmarks after restore
+    local bookmarks_after_restore=$(jq '.bookmarks | length' "$TEST_BOOKMARKS_FILE")
+    
+    # Check if the restore worked (bookmark count should be less after restore since we added one)
+    if [ "$bookmarks_after_restore" -lt "$bookmarks_before_restore" ]; then
+        echo -e "${GREEN}✓ Test passed: Restore from backup with -y flag${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: Restore did not work correctly with -y flag${NC}"
+        echo -e "  Bookmarks before: $bookmarks_before_restore"
+        echo -e "  Bookmarks after: $bookmarks_after_restore"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
     # Test that edit/delete/obsolete commands accept being called without arguments
     # (they would use fzf interactively, but in test we just verify they don't error)
     echo -e "${BLUE}Testing that commands can be called without arguments...${NC}"

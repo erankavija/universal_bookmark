@@ -1663,7 +1663,7 @@ restore_from_backup() {
     done
     
     local selection="1"
-    if [[ "$NON_INTERACTIVE" == "false" ]]; then
+    if [[ "$NON_INTERACTIVE" != "true" ]]; then
         read -p "Enter backup number to restore (0 to cancel): " selection
     fi
     
