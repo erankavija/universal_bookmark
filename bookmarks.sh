@@ -399,6 +399,49 @@ create_bookmark_entry() {
         '{id: $id, description: $desc, type: $type, command: $cmd, tags: $tags, notes: $notes, created: $created, status: "active", access_count: 0, last_accessed: null, frecency_score: 0}'
 }
 
+# Internal function to update bookmark fields in JSON file
+# Args: $1 - identifier (id or description), $2 - identifier type ("id" or "desc"),
+#       $3 - new description, $4 - new type, $5 - new command, $6 - new tags, $7 - new notes
+# Returns: Updates the bookmarks file and returns 0 on success
+_update_bookmark_fields() {
+    local identifier="$1"
+    local identifier_type="$2"
+    local new_description="$3"
+    local new_type="$4"
+    local new_command="$5"
+    local new_tags="$6"
+    local new_notes="$7"
+    
+    # Update the bookmark with timestamp
+    local modified
+    modified=$(date +"%Y-%m-%d %H:%M:%S")
+    
+    local updated_json
+    if [[ "$identifier_type" == "id" ]]; then
+        # Update by ID
+        updated_json=$(jq --arg id "$identifier" \
+            --arg desc "$new_description" \
+            --arg type "$new_type" \
+            --arg cmd "$new_command" \
+            --arg tags "$new_tags" \
+            --arg notes "$new_notes" \
+            --arg modified "$modified" \
+            '.bookmarks = [.bookmarks[] | if .id == $id then .description = $desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
+    else
+        # Update by description
+        updated_json=$(jq --arg desc "$identifier" \
+            --arg new_desc "$new_description" \
+            --arg type "$new_type" \
+            --arg cmd "$new_command" \
+            --arg tags "$new_tags" \
+            --arg notes "$new_notes" \
+            --arg modified "$modified" \
+            '.bookmarks = [.bookmarks[] | if .description == $desc then .description = $new_desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
+    fi
+    
+    echo "$updated_json" > "$BOOKMARKS_FILE"
+}
+
 # Add a new bookmark with improved validation and modularity
 # Args: $1 - description, $2 - type, $3 - command, $4 - tags (optional), $5 - notes (optional)
 add_bookmark() {
@@ -680,21 +723,8 @@ edit_bookmark_with_editor() {
         fi
     fi
     
-    # Update the bookmark with timestamp
-    local modified
-    modified=$(date +"%Y-%m-%d %H:%M:%S")
-    
-    local updated_json
-    updated_json=$(jq --arg id "$id" \
-        --arg desc "$new_description" \
-        --arg type "$new_type" \
-        --arg cmd "$new_command" \
-        --arg tags "$new_tags" \
-        --arg notes "$new_notes" \
-        --arg modified "$modified" \
-        '.bookmarks = [.bookmarks[] | if .id == $id then .description = $desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
-    
-    echo "$updated_json" > "$BOOKMARKS_FILE"
+    # Update the bookmark using internal function
+    _update_bookmark_fields "$id" "id" "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes"
     echo -e "${GREEN}Bookmark updated: ${CYAN}$new_description${NC}"
 }
 
@@ -780,20 +810,8 @@ modify_add_bookmark() {
             local existing_id
             existing_id=$(echo "$existing_bookmark" | jq -r '.id')
             
-            local modified
-            modified=$(date +"%Y-%m-%d %H:%M:%S")
-            
-            local updated_json
-            updated_json=$(jq --arg id "$existing_id" \
-                --arg desc "$new_description" \
-                --arg type "$new_type" \
-                --arg cmd "$new_command" \
-                --arg tags "$new_tags" \
-                --arg notes "$new_notes" \
-                --arg modified "$modified" \
-                '.bookmarks = [.bookmarks[] | if .id == $id then .description = $desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
-            
-            echo "$updated_json" > "$BOOKMARKS_FILE"
+            # Update the bookmark using internal function
+            _update_bookmark_fields "$existing_id" "id" "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes"
             echo -e "${GREEN}Bookmark updated: ${CYAN}$new_description${NC}"
             return
         else
@@ -945,20 +963,8 @@ update_bookmark() {
         exit 1
     fi
     
-    # Update the bookmark with timestamp
-    local modified
-    modified=$(date +"%Y-%m-%d %H:%M:%S")
-    
-    local updated_json
-    updated_json=$(jq --arg desc "$description" \
-        --arg type "$type" \
-        --arg cmd "$command" \
-        --arg tags "$tags" \
-        --arg notes "$notes" \
-        --arg modified "$modified" \
-        '.bookmarks = [.bookmarks[] | if .description == $desc then .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
-    
-    echo "$updated_json" > "$BOOKMARKS_FILE"
+    # Update the bookmark using internal function
+    _update_bookmark_fields "$description" "desc" "$description" "$type" "$command" "$tags" "$notes"
     echo -e "${GREEN}Bookmark updated: ${CYAN}$description${NC}"
 }
 
@@ -1065,21 +1071,8 @@ edit_bookmark_interactive() {
     new_values=$(get_new_values_for_editing "$description" "$type" "$command" "$tags" "$notes")
     IFS=$'\t' read -r new_description new_type new_command new_tags new_notes <<< "$new_values"
     
-    # Update the bookmark with timestamp
-    local modified
-    modified=$(date +"%Y-%m-%d %H:%M:%S")
-    
-    local updated_json
-    updated_json=$(jq --arg id "$id" \
-        --arg desc "$new_description" \
-        --arg type "$new_type" \
-        --arg cmd "$new_command" \
-        --arg tags "$new_tags" \
-        --arg notes "$new_notes" \
-        --arg modified "$modified" \
-        '.bookmarks = [.bookmarks[] | if .id == $id then .description = $desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
-    
-    echo "$updated_json" > "$BOOKMARKS_FILE"
+    # Update the bookmark using internal function
+    _update_bookmark_fields "$id" "id" "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes"
     echo -e "${GREEN}Bookmark updated: ${CYAN}$new_description${NC}"
 }
 
