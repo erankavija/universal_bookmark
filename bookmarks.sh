@@ -809,20 +809,8 @@ modify_add_bookmark() {
             local existing_id
             existing_id=$(echo "$existing_bookmark" | jq -r '.id')
             
-            local modified
-            modified=$(date +"%Y-%m-%d %H:%M:%S")
-            
-            local updated_json
-            updated_json=$(jq --arg id "$existing_id" \
-                --arg desc "$new_description" \
-                --arg type "$new_type" \
-                --arg cmd "$new_command" \
-                --arg tags "$new_tags" \
-                --arg notes "$new_notes" \
-                --arg modified "$modified" \
-                '.bookmarks = [.bookmarks[] | if .id == $id then .description = $desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
-            
-            echo "$updated_json" > "$BOOKMARKS_FILE"
+            # Update the bookmark using internal function
+            _update_bookmark_fields "$existing_id" "id" "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes"
             echo -e "${GREEN}Bookmark updated: ${CYAN}$new_description${NC}"
             return
         else
