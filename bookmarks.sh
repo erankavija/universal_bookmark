@@ -1424,55 +1424,48 @@ format_bookmark_details_for_preview() {
     values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags, .notes, .created, .modified // "", .status, .access_count // 0, .last_accessed // "", .frecency_score // 0] | @tsv')
     IFS=$'\t' read -r id description type command tags notes created modified status access_count last_accessed frecency_score <<< "$values"
     
-    # Format the output with clear labels
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📋 BOOKMARK DETAILS"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    # Format the output with clear labels using RST-style underlines
+    echo "BOOKMARK DETAILS"
+    echo "================"
     echo ""
     echo "Description: $description"
     echo "Type:        $type"
     echo "Status:      $status"
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "💻 COMMAND"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "COMMAND"
+    echo "-------"
     echo "$command"
     echo ""
     
     if [[ -n "$tags" ]]; then
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "🏷️  TAGS"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "TAGS"
+        echo "----"
         echo "$tags"
         echo ""
     fi
     
     if [[ -n "$notes" ]]; then
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "📝 NOTES"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "NOTES"
+        echo "-----"
         echo "$notes"
         echo ""
     fi
     
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📊 METADATA"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "METADATA"
+    echo "--------"
     echo "ID:          $id"
     echo "Created:     $created"
     if [[ -n "$modified" ]]; then
         echo "Modified:    $modified"
     fi
     echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📈 USAGE STATISTICS"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "USAGE STATISTICS"
+    echo "----------------"
     echo "Access Count:    $access_count"
     if [[ -n "$last_accessed" && "$last_accessed" != "null" ]]; then
         echo "Last Accessed:   $last_accessed"
     fi
     echo "Frecency Score:  $frecency_score"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
 # Display bookmarks grouped by type with color coding
