@@ -430,12 +430,13 @@ _update_bookmark_fields() {
     else
         # Update by description
         updated_json=$(jq --arg desc "$identifier" \
+            --arg new_desc "$new_description" \
             --arg type "$new_type" \
             --arg cmd "$new_command" \
             --arg tags "$new_tags" \
             --arg notes "$new_notes" \
             --arg modified "$modified" \
-            '.bookmarks = [.bookmarks[] | if .description == $desc then .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
+            '.bookmarks = [.bookmarks[] | if .description == $desc then .description = $new_desc | .type = $type | .command = $cmd | .tags = $tags | .notes = $notes | .modified = $modified else . end]' "$BOOKMARKS_FILE")
     fi
     
     echo "$updated_json" > "$BOOKMARKS_FILE"
