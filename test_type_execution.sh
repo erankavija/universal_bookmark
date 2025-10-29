@@ -3,83 +3,17 @@
 # Test suite for type-specific bookmark execution
 # This tests the new execute_bookmark_by_type function
 
-# Set colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Test counter
-TESTS_PASSED=0
-TESTS_FAILED=0
-TOTAL_TESTS=0
-
-# Setup test environment
-setup_test_env() {
-    echo -e "${BLUE}Setting up test environment...${NC}"
-    
-    # Create temporary test directory
-    TEST_DIR=$(mktemp -d)
-    TEST_BOOKMARKS_FILE="$TEST_DIR/bookmarks.json"
-    
-    # Initialize bookmarks file
-    echo '{"bookmarks":[]}' > "$TEST_BOOKMARKS_FILE"
-    
-    # Create test files
-    mkdir -p "$TEST_DIR/files"
-    echo "Test content" > "$TEST_DIR/files/test.txt"
-    
-    # Save original BOOKMARKS_DIR
-    ORIG_BOOKMARKS_DIR="$BOOKMARKS_DIR"
-    
-    # Set BOOKMARKS_DIR to test directory
-    export BOOKMARKS_DIR="$TEST_DIR"
-    
-    echo -e "${GREEN}Test environment set up at $TEST_DIR${NC}"
-}
-
-# Cleanup test environment
-cleanup_test_env() {
-    echo -e "${BLUE}Cleaning up test environment...${NC}"
-    
-    # Restore original BOOKMARKS_DIR
-    export BOOKMARKS_DIR="$ORIG_BOOKMARKS_DIR"
-    
-    # Remove test directory
-    rm -rf "$TEST_DIR"
-    
-    echo -e "${GREEN}Test environment cleaned up${NC}"
-}
-
-# Run a test and check if it passes
-run_test() {
-    local test_name="$1"
-    local test_cmd="$2"
-    local expected_exit_code="${3:-0}"
-    
-    echo -e "${BLUE}Running test: ${YELLOW}$test_name${NC}"
-    TOTAL_TESTS=$((TOTAL_TESTS + 1))
-    
-    # Run the command
-    eval "$test_cmd" > /tmp/test_output.txt 2>&1
-    local exit_code=$?
-    
-    if [ "$exit_code" -eq "$expected_exit_code" ]; then
-        echo -e "${GREEN}✓ Test passed: $test_name${NC}"
-        TESTS_PASSED=$((TESTS_PASSED + 1))
-        return 0
-    else
-        echo -e "${RED}✗ Test failed: $test_name (Exit code: $exit_code, Expected: $expected_exit_code)${NC}"
-        cat /tmp/test_output.txt
-        TESTS_FAILED=$((TESTS_FAILED + 1))
-        return 1
-    fi
-}
+# Source the shared test framework
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/test_framework.sh"
 
 # Run the test suite
 run_test_suite() {
     echo -e "${BLUE}Starting type-specific execution test suite${NC}"
+    
+    # Create test files for file/folder/pdf/note/edit types
+    mkdir -p "$TEST_DIR/files"
+    echo "Test content" > "$TEST_DIR/files/test.txt"
     
     # Test script type (direct execution)
     run_test "Add script bookmark" \
