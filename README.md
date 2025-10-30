@@ -103,7 +103,7 @@ After setup, you can use either the `bookmark` command (if you used the setup sc
 
 - **Interactive Selection**: Simply run `bookmark` with no arguments to get a fuzzy search interface
 - **Direct Search**: Use `bookmark "search term"` to filter and execute a bookmark
-- **List All**: Run `bookmark list` to see all bookmarks without executing them
+- **List All**: Run `bookmark list` to see all bookmarks in a machine-readable format (one per line with pipe-separated fields)
 - **Get Help**: Use `bookmark help` for full documentation
 
 ### Managing Bookmarks
@@ -207,6 +207,47 @@ Show more details about your bookmarks:
 ```bash
 bookmark details
 ```
+
+#### Listing Bookmarks
+
+List all bookmarks in a machine-readable format that can be piped to other shell utilities:
+```bash
+bookmark list
+```
+
+The output format is:
+```
+[type] description | command | status | id | tags
+```
+
+Each bookmark is output on a single line with fields separated by ` | ` (space-pipe-space). This format makes it easy to:
+
+**Filter by type:**
+```bash
+bookmark list | grep '\[ssh\]'
+```
+
+**Extract commands:**
+```bash
+bookmark list | awk -F' [|] ' '{print $2}'
+```
+
+**Filter by tags:**
+```bash
+bookmark list | grep 'production'
+```
+
+**Filter by status:**
+```bash
+bookmark list | grep ' active '
+```
+
+**Count bookmarks by type:**
+```bash
+bookmark list | cut -d']' -f1 | cut -d'[' -f2 | sort | uniq -c
+```
+
+When output is directed to a terminal, the type field is color-coded for readability. When piped to another command or redirected to a file, colors are automatically removed for clean parsing.
 
 #### Tag Filtering
 

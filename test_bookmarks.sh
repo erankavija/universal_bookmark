@@ -23,6 +23,68 @@ run_test_suite() {
     run_test "List all bookmarks" \
         "./bookmarks.sh list"
     
+    # Test the new list output format
+    echo -e "${BLUE}Testing new list output format...${NC}"
+    
+    # Verify list output contains pipe-separated fields
+    # Expected format: [type] description | command | status | id | tags
+    # Pattern explanation:
+    # - \[[a-z]+\]     : Type in brackets (e.g., [url], [script])
+    # - [^|]+          : Description (anything except pipe)
+    # - \|             : Pipe separator
+    # - [^|]+          : Command (anything except pipe)
+    # - \|             : Pipe separator
+    # - (active|obsolete) : Status must be either 'active' or 'obsolete'
+    # - \|             : Pipe separator
+    # - [0-9]+_[a-zA-Z0-9]+ : ID format (timestamp_randomstring)
+    # - \|             : Pipe separator
+    # - .*             : Tags (optional, can be empty)
+    local list_output=$(./bookmarks.sh list)
+    if echo "$list_output" | grep -qE '^\[[a-z]+\] [^|]+ \| [^|]+ \| (active|obsolete) \| [0-9]+_[a-zA-Z0-9]+ \| .*$'; then
+        echo -e "${GREEN}✓ Test passed: List output has correct format${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: List output does not match expected format${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test that list output is parseable with grep
+    if ./bookmarks.sh list | grep -q '\[url\]'; then
+        echo -e "${GREEN}✓ Test passed: List output is grep-able${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: List output is not grep-able${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test that list output is parseable with awk to extract commands
+    local extracted_command=$(./bookmarks.sh list | head -1 | awk -F' [|] ' '{print $2}')
+    if [ -n "$extracted_command" ]; then
+        echo -e "${GREEN}✓ Test passed: Commands extractable with awk${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${RED}✗ Test failed: Commands not extractable with awk${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
+    # Test that piped output has no ANSI color codes
+    local piped_output=$(./bookmarks.sh list | cat)
+    if echo "$piped_output" | grep -qE '\x1B\[[0-9;]*[mK]'; then
+        echo -e "${RED}✗ Test failed: Piped output contains ANSI codes${NC}"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    else
+        echo -e "${GREEN}✓ Test passed: Piped output has no ANSI codes${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+        TOTAL_TESTS=$((TOTAL_TESTS + 1))
+    fi
+    
     # Test detailed listing - skip interactive fzf test as it requires user input
     # The details command now launches fzf interactively with preview
     # Manual testing confirms it works correctly
