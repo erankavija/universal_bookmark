@@ -1534,22 +1534,32 @@ list_all_bookmarks() {
     
     # Output one bookmark per line with essential information
     # Format: [type] description | command | status | id | tags
-    jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | 
+    # Extract fields using jq and format with pipe separators
+    local jq_query='
+        .bookmarks | 
+        sort_by(-.frecency_score // 0) | 
+        .[] | 
         "[" + .type + "] " + .description + " | " + 
         .command + " | " + 
         .status + " | " + 
         .id + " | " + 
-        (.tags // "")' "$BOOKMARKS_FILE" | \
+        (.tags // "")
+    '
+    
+    jq -r "$jq_query" "$BOOKMARKS_FILE" | \
     while IFS= read -r line; do
         if [[ "$use_colors" == "true" ]]; then
             # Color output for terminal viewing
             if [[ "$line" == *" | obsolete | "* ]]; then
                 echo -e "${RED}$line${NC}"
             else
-                # Extract and color individual parts
-                if [[ "$line" =~ ^\[([^\]]+)\]\ (.*)\ \|\ (.*)\ \|\ (.*)\ \|\ (.*)\ \|\ (.*)$ ]]; then
+                # Extract type from beginning of line and color it cyan
+                # Pattern: [type] rest_of_line
+                # Capture group 1: type (anything except ])
+                # Capture group 2: everything after ]
+                if [[ "$line" =~ ^\[([^\]]+)\]\ (.*)$ ]]; then
                     local type="${BASH_REMATCH[1]}"
-                    local rest="${BASH_REMATCH[2]} | ${BASH_REMATCH[3]} | ${BASH_REMATCH[4]} | ${BASH_REMATCH[5]} | ${BASH_REMATCH[6]}"
+                    local rest="${BASH_REMATCH[2]}"
                     echo -e "${CYAN}[${type}]${NC} ${rest}"
                 else
                     echo "$line"

@@ -27,8 +27,20 @@ run_test_suite() {
     echo -e "${BLUE}Testing new list output format...${NC}"
     
     # Verify list output contains pipe-separated fields
+    # Expected format: [type] description | command | status | id | tags
+    # Pattern explanation:
+    # - \[[a-z]+\]     : Type in brackets (e.g., [url], [script])
+    # - [^|]+          : Description (anything except pipe)
+    # - \|             : Pipe separator
+    # - [^|]+          : Command (anything except pipe)
+    # - \|             : Pipe separator
+    # - (active|obsolete) : Status must be either 'active' or 'obsolete'
+    # - \|             : Pipe separator
+    # - [0-9]+_[a-zA-Z0-9]+ : ID format (timestamp_randomstring)
+    # - \|             : Pipe separator
+    # - .*             : Tags (optional, can be empty)
     local list_output=$(./bookmarks.sh list)
-    if echo "$list_output" | grep -q '\[.*\] .* | .* | .* | .* | .*'; then
+    if echo "$list_output" | grep -qE '^\[[a-z]+\] [^|]+ \| [^|]+ \| (active|obsolete) \| [0-9]+_[a-zA-Z0-9]+ \| .*$'; then
         echo -e "${GREEN}✓ Test passed: List output has correct format${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
