@@ -86,8 +86,11 @@ Definition acc := Z.
 Definition acc_empty : acc := 0%Z.
 
 (* Update: add Sprod << shift, i.e., Sprod * 2^(shift) *)
+(* Note: In the C implementation, this is only called when shift >= 0 *)
 Definition acc_update (A: acc) (fx fy: finite_SE) : acc :=
-  (A + term_int fx fy * Z.pow 2 (term_shift fx fy))%Z.
+  let shift := term_shift fx fy in
+  if (shift <? 0)%Z then A  (* C code skips negative shifts *)
+  else (A + term_int fx fy * Z.pow 2 shift)%Z.
 
 (* Order independence holds by commutativity of + over Z *)
 Lemma acc_update_comm :
@@ -95,7 +98,10 @@ Lemma acc_update_comm :
     acc_update (acc_update A f1 f2) f2 f1 =
     acc_update (acc_update A f2 f1) f1 f2.
 Proof.
-  intros. unfold acc_update, term_int, term_shift. lia.
+  intros. unfold acc_update, term_int, term_shift.
+  destruct (Z.ltb_spec (f1.(f_E) + f2.(f_E) - EMIN) 0);
+  destruct (Z.ltb_spec (f2.(f_E) + f1.(f_E) - EMIN) 0);
+  try lia; ring.
 Qed.
 
 (* Accumulating a list of pairs *)
