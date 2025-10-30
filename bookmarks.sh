@@ -1335,19 +1335,23 @@ format_bookmark_details_for_preview() {
     echo "$command"
     echo ""
     
-    if [[ -n "$tags" ]]; then
-        echo "Tags"
-        echo "----"
+    echo "Tags"
+    echo "----"
+    if [[ $tags == "" ]]; then
+        echo "N/A"
+    else
         echo "$tags"
-        echo ""
     fi
+    echo ""
     
-    if [[ -n "$notes" ]]; then
-        echo "Notes"
-        echo "-----"
+    echo "Notes"
+    echo "-----"
+    if [[ $notes == "" ]]; then
+        echo "N/A"
+    else
         echo "$notes"
-        echo ""
     fi
+    echo ""
     
     echo "Metadata"
     echo "--------"
