@@ -1,5 +1,0 @@
-/home/runner/work/universal_bookmark/universal_bookmark/repro_ddot/_codeql_build_dir/CMakeFiles/reproblas.dir
-/home/runner/work/universal_bookmark/universal_bookmark/repro_ddot/_codeql_build_dir/CMakeFiles/test_ddot.dir
-/home/runner/work/universal_bookmark/universal_bookmark/repro_ddot/_codeql_build_dir/CMakeFiles/test.dir
-/home/runner/work/universal_bookmark/universal_bookmark/repro_ddot/_codeql_build_dir/CMakeFiles/edit_cache.dir
-/home/runner/work/universal_bookmark/universal_bookmark/repro_ddot/_codeql_build_dir/CMakeFiles/rebuild_cache.dir

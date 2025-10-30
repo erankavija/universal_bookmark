@@ -1,1 +1,0 @@
-/home/runner/work/universal_bookmark/.codeql-scratch/dbs/cpp/working/autobuild/bin/cc -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/test_ddot.dir/link.d CMakeFiles/test_ddot.dir/src/tests/test_ddot.c.o -o bin/test_ddot  libreproblas.a

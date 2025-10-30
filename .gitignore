@@ -1,6 +1,10 @@
 # Build directory
 /build/
 
+# CodeQL build artifacts
+_codeql_detected_source_root
+**/_codeql_build_dir/
+
 # Coq build artifacts
 *.vo
 *.vok

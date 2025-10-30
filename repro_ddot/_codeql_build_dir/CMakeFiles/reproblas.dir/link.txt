@@ -1,2 +1,0 @@
-/usr/bin/ar qc libreproblas.a CMakeFiles/reproblas.dir/src/reproblas/ddot.c.o
-/usr/bin/ranlib libreproblas.a
