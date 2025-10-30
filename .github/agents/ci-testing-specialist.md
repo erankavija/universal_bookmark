@@ -1,3 +1,8 @@
+---
+name: CI/Testing Specialist
+description: Test automation and CI/CD expert for shell script projects
+---
+
 # CI/Testing Specialist Agent
 
 ## Agent Identity
