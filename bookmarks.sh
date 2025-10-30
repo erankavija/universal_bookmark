@@ -1258,8 +1258,8 @@ list_bookmarks_with_details() {
         return
     fi
     
-    # Create a preview command that extracts and formats bookmark details using jq
-    local preview_cmd="echo {} | sed -E 's/\\x1B\\[[0-9;]*[mK]//g' | sed -E 's/^\\[OBSOLETE\\] \\[(.*)\\] (.*)/\\2/' | sed -E 's/^\\[(.*)\\] (.*)/\\2/' | xargs -I DESC jq -r --arg desc \"DESC\" '.bookmarks[] | select(.description == \$desc) | \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📋 BOOKMARK DETAILS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\nDescription: \" + .description + \"\\nType:        \" + .type + \"\\nStatus:      \" + .status + \"\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n💻 COMMAND\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .command + \"\\n\\n\" + (if .tags != \"\" and .tags != null then \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n🏷️  TAGS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .tags + \"\\n\\n\" else \"\" end) + (if .notes != \"\" and .notes != null then \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📝 NOTES\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .notes + \"\\n\\n\" else \"\" end) + \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📊 METADATA\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nID:          \" + .id + \"\\nCreated:     \" + (.created // \"\") + (if .modified != \"\" and .modified != null then \"\\nModified:    \" + .modified else \"\" end) + \"\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📈 USAGE STATISTICS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nAccess Count:    \" + (.access_count // 0 | tostring) + (if .last_accessed != \"\" and .last_accessed != null then \"\\nLast Accessed:   \" + .last_accessed else \"\" end) + \"\\nFrecency Score:  \" + (.frecency_score // 0 | tostring) + \"\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"' \"$BOOKMARKS_FILE\""
+    # Create a preview command that calls the format function
+    local preview_cmd="echo {} | sed -E 's/\\x1B\\[[0-9;]*[mK]//g' | sed -E 's/^\\[OBSOLETE\\] \\[(.*)\\] (.*)/\\2/' | sed -E 's/^\\[(.*)\\] (.*)/\\2/' | xargs -I DESC bash \"$0\" _preview_details \"DESC\""
     
     # Select bookmark with fzf including preview
     local selected
@@ -1304,10 +1304,22 @@ format_bookmark_details_for_preview() {
         return 1
     fi
     
-    # Extract all fields efficiently
+    # Extract all fields efficiently using array to handle empty fields correctly
     local values
-    values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags, .notes, .created, .modified // "", .status, .access_count // 0, .last_accessed // "", .frecency_score // 0] | @tsv')
-    IFS=$'\t' read -r id description type command tags notes created modified status access_count last_accessed frecency_score <<< "$values"
+    values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags // "", .notes // "", .created, .modified // "null", .status, .access_count // 0, .last_accessed // "null", .frecency_score // 0] | @tsv')
+    IFS=$'\t' read -r -a fields <<< "$values"
+    local id="${fields[0]}"
+    local description="${fields[1]}"
+    local type="${fields[2]}"
+    local command="${fields[3]}"
+    local tags="${fields[4]}"
+    local notes="${fields[5]}"
+    local created="${fields[6]}"
+    local modified="${fields[7]}"
+    local status="${fields[8]}"
+    local access_count="${fields[9]}"
+    local last_accessed="${fields[10]}"
+    local frecency_score="${fields[11]}"
     
     # Format the output with clear labels using RST-style underlines
     echo "BOOKMARK DETAILS"
@@ -1340,7 +1352,7 @@ format_bookmark_details_for_preview() {
     echo "--------"
     echo "ID:          $id"
     echo "Created:     $created"
-    if [[ -n "$modified" ]]; then
+    if [[ -n "$modified" && "$modified" != "null" ]]; then
         echo "Modified:    $modified"
     fi
     echo ""
@@ -1778,6 +1790,10 @@ case "${1:-}" in
         ;;
     "help")
         show_help
+        ;;
+    "_preview_details")
+        # Internal command for fzf preview - not shown in help
+        format_bookmark_details_for_preview "$2"
         ;;
     *)
         # Default: list bookmarks
