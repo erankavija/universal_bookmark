@@ -1258,8 +1258,8 @@ list_bookmarks_with_details() {
         return
     fi
     
-    # Create a preview command that extracts and formats bookmark details using jq
-    local preview_cmd="echo {} | sed -E 's/\\x1B\\[[0-9;]*[mK]//g' | sed -E 's/^\\[OBSOLETE\\] \\[(.*)\\] (.*)/\\2/' | sed -E 's/^\\[(.*)\\] (.*)/\\2/' | xargs -I DESC jq -r --arg desc \"DESC\" '.bookmarks[] | select(.description == \$desc) | \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📋 BOOKMARK DETAILS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\nDescription: \" + .description + \"\\nType:        \" + .type + \"\\nStatus:      \" + .status + \"\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n💻 COMMAND\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .command + \"\\n\\n\" + (if .tags != \"\" and .tags != null then \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n🏷️  TAGS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .tags + \"\\n\\n\" else \"\" end) + (if .notes != \"\" and .notes != null then \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📝 NOTES\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\" + .notes + \"\\n\\n\" else \"\" end) + \"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📊 METADATA\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nID:          \" + .id + \"\\nCreated:     \" + (.created // \"\") + (if .modified != \"\" and .modified != null then \"\\nModified:    \" + .modified else \"\" end) + \"\\n\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n📈 USAGE STATISTICS\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\nAccess Count:    \" + (.access_count // 0 | tostring) + (if .last_accessed != \"\" and .last_accessed != null then \"\\nLast Accessed:   \" + .last_accessed else \"\" end) + \"\\nFrecency Score:  \" + (.frecency_score // 0 | tostring) + \"\\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\"' \"$BOOKMARKS_FILE\""
+    # Create a preview command that calls the format function
+    local preview_cmd="echo {} | sed -E 's/\\x1B\\[[0-9;]*[mK]//g' | sed -E 's/^\\[OBSOLETE\\] \\[(.*)\\] (.*)/\\2/' | sed -E 's/^\\[(.*)\\] (.*)/\\2/' | xargs -I DESC bash \"$0\" _preview_details \"DESC\""
     
     # Select bookmark with fzf including preview
     local selected
@@ -1304,43 +1304,60 @@ format_bookmark_details_for_preview() {
         return 1
     fi
     
-    # Extract all fields efficiently
-    local values
-    values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags, .notes, .created, .modified // "", .status, .access_count // 0, .last_accessed // "", .frecency_score // 0] | @tsv')
-    IFS=$'\t' read -r id description type command tags notes created modified status access_count last_accessed frecency_score <<< "$values"
+    # Extract all fields efficiently - extract each field individually to handle all edge cases
+    local id description type command tags notes created modified status access_count last_accessed frecency_score
+    id=$(echo "$bookmark" | jq -r '.id // ""')
+    description=$(echo "$bookmark" | jq -r '.description // ""')
+    type=$(echo "$bookmark" | jq -r '.type // ""')
+    command=$(echo "$bookmark" | jq -r '.command // ""')
+    tags=$(echo "$bookmark" | jq -r '.tags // ""')
+    notes=$(echo "$bookmark" | jq -r '.notes // ""')
+    created=$(echo "$bookmark" | jq -r '.created // ""')
+    modified=$(echo "$bookmark" | jq -r '.modified // "null"')
+    status=$(echo "$bookmark" | jq -r '.status // ""')
+    access_count=$(echo "$bookmark" | jq -r '.access_count // 0')
+    last_accessed=$(echo "$bookmark" | jq -r '.last_accessed // "null"')
+    frecency_score=$(echo "$bookmark" | jq -r '.frecency_score // 0')
     
     # Format the output with clear labels using RST-style underlines
-    echo "BOOKMARK DETAILS"
+    echo "Bookmark Details"
     echo "================"
     echo ""
-    echo "Description: $description"
-    echo "Type:        $type"
-    echo "Status:      $status"
+    echo "Type:   $type"
+    echo "Status: $status"
     echo ""
-    echo "COMMAND"
+    echo "Description"
+    echo "-----------"
+    echo "$description"
+    echo ""
+    echo "Command"
     echo "-------"
     echo "$command"
     echo ""
     
-    if [[ -n "$tags" ]]; then
-        echo "TAGS"
-        echo "----"
+    echo "Tags"
+    echo "----"
+    if [[ $tags == "" ]]; then
+        echo "N/A"
+    else
         echo "$tags"
-        echo ""
     fi
+    echo ""
     
-    if [[ -n "$notes" ]]; then
-        echo "NOTES"
-        echo "-----"
+    echo "Notes"
+    echo "-----"
+    if [[ $notes == "" ]]; then
+        echo "N/A"
+    else
         echo "$notes"
-        echo ""
     fi
+    echo ""
     
-    echo "METADATA"
+    echo "Metadata"
     echo "--------"
     echo "ID:          $id"
     echo "Created:     $created"
-    if [[ -n "$modified" ]]; then
+    if [[ -n "$modified" && "$modified" != "null" ]]; then
         echo "Modified:    $modified"
     fi
     echo ""
@@ -1349,6 +1366,8 @@ format_bookmark_details_for_preview() {
     echo "Access Count:    $access_count"
     if [[ -n "$last_accessed" && "$last_accessed" != "null" ]]; then
         echo "Last Accessed:   $last_accessed"
+    else
+        echo "Last Accessed:   N/A"
     fi
     echo "Frecency Score:  $frecency_score"
 }
@@ -1778,6 +1797,10 @@ case "${1:-}" in
         ;;
     "help")
         show_help
+        ;;
+    "_preview_details")
+        # Internal command for fzf preview - not shown in help
+        format_bookmark_details_for_preview "$2"
         ;;
     *)
         # Default: list bookmarks
