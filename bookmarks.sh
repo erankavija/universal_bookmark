@@ -640,9 +640,9 @@ ${line}"
     printf "%b\t%b\t%b\t%b\t%b" "$description" "$type" "$command" "$tags" "$notes"
 }
 
-# Edit bookmark using external editor
+# Edit a bookmark using the configured editor
 # Args: $1 - ID or description (optional, uses fzf if not provided)
-edit_bookmark_with_editor() {
+edit_bookmark() {
     local id_or_desc="${1:-}"
     
     # If no argument provided, use fzf to select
@@ -966,114 +966,6 @@ update_bookmark() {
     # Update the bookmark using internal function
     _update_bookmark_fields "$description" "desc" "$description" "$type" "$command" "$tags" "$notes"
     echo -e "${GREEN}Bookmark updated: ${CYAN}$description${NC}"
-}
-
-# Display current bookmark values for editing
-# Args: $1 - bookmark JSON object
-display_bookmark_for_editing() {
-    local bookmark="$1"
-    
-    # Extract values using a single jq call for efficiency
-    local values
-    values=$(echo "$bookmark" | jq -r '[.description, .type, .command, .tags, .notes] | @tsv')
-    
-    # Parse the tab-separated values
-    IFS=$'\t' read -r description type command tags notes <<< "$values"
-    
-    echo -e "${BLUE}Current values:${NC}"
-    echo -e "  ${BLUE}Description:${NC} $description"
-    echo -e "  ${BLUE}Type:${NC} $type"
-    echo -e "  ${BLUE}Command:${NC} $command"
-    echo -e "  ${BLUE}Tags:${NC} $tags"
-    echo -e "  ${BLUE}Notes:${NC} $notes"
-    echo ""
-}
-
-# Get new values from user for editing
-# Args: $1 - current description, $2 - current type, $3 - current command, $4 - current tags, $5 - current notes
-# Returns: tab-separated new values
-get_new_values_for_editing() {
-    local current_desc="$1" current_type="$2" current_cmd="$3" current_tags="$4" current_notes="$5"
-    
-    local new_description new_type new_command new_tags new_notes
-    
-    read -p "New description (leave empty to keep current): " new_description
-    read -p "New type (leave empty to keep current): " new_type
-    read -p "New command (leave empty to keep current): " new_command
-    read -p "New tags (leave empty to keep current): " new_tags
-    read -p "New notes (leave empty to keep current): " new_notes
-    
-    # Use current values if new ones are not provided
-    new_description="${new_description:-$current_desc}"
-    new_type="${new_type:-$current_type}"
-    new_command="${new_command:-$current_cmd}"
-    new_tags="${new_tags:-$current_tags}"
-    new_notes="${new_notes:-$current_notes}"
-    
-    # Validate the new type
-    if ! is_valid_type "$new_type"; then
-        echo -e "${YELLOW}Warning: '$new_type' is not in the list of standard types.${NC}"
-        echo -e "Standard types: ${CYAN}${VALID_TYPES[*]}${NC}"
-        
-        if ! get_user_confirmation "Do you want to continue with this custom type? (y/n): "; then
-            echo -e "${YELLOW}Operation cancelled.${NC}"
-            exit 0
-        fi
-    fi
-    
-    # Return tab-separated values
-    printf "%s\t%s\t%s\t%s\t%s" "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes"
-}
-
-# Edit a bookmark interactively using the configured editor (default behavior)
-# Args: $1 - ID or description (optional, uses fzf if not provided)
-edit_bookmark() {
-    # Use the editor-based editing as the default
-    edit_bookmark_with_editor "$@"
-}
-
-# Edit a bookmark interactively with prompts (legacy mode)
-# Args: $1 - ID or description (optional, uses fzf if not provided)
-edit_bookmark_interactive() {
-    local id_or_desc="${1:-}"
-    
-    # If no argument provided, use fzf to select
-    if [[ -z "$id_or_desc" ]]; then
-        id_or_desc=$(select_bookmark_with_fzf "Select bookmark to edit")
-        if [[ $? -ne 0 ]] || [[ -z "$id_or_desc" ]]; then
-            echo -e "${YELLOW}No bookmark selected.${NC}"
-            exit 0
-        fi
-    fi
-    
-    # Validate JSON file first
-    validate_bookmarks_file || exit 1
-    
-    # Find the bookmark using the optimized function
-    local bookmark
-    bookmark=$(get_bookmark_by_id_or_desc "$id_or_desc")
-    
-    if [[ -z "$bookmark" ]]; then
-        echo -e "${RED}No bookmark found with ID or description: $id_or_desc${NC}" >&2
-        exit 1
-    fi
-    
-    # Extract current values efficiently
-    local current_values
-    current_values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags, .notes] | @tsv')
-    IFS=$'\t' read -r id description type command tags notes <<< "$current_values"
-    
-    echo -e "${BLUE}Editing bookmark: ${CYAN}$description${NC}"
-    display_bookmark_for_editing "$bookmark"
-    
-    # Get new values from user
-    local new_values
-    new_values=$(get_new_values_for_editing "$description" "$type" "$command" "$tags" "$notes")
-    IFS=$'\t' read -r new_description new_type new_command new_tags new_notes <<< "$new_values"
-    
-    # Update the bookmark using internal function
-    _update_bookmark_fields "$id" "id" "$new_description" "$new_type" "$new_command" "$new_tags" "$new_notes"
-    echo -e "${GREEN}Bookmark updated: ${CYAN}$new_description${NC}"
 }
 
 # Delete a bookmark with improved confirmation and error handling
