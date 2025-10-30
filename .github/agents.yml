@@ -1,0 +1,13 @@
+# GitHub Copilot Custom Agents Configuration
+#
+# This file registers custom agents that provide specialized expertise
+# for different aspects of the Universal Bookmarks project.
+
+agents:
+  - name: ci-testing-specialist
+    description: Expert in test automation, CI/CD pipelines, and quality assurance
+    agent_file: agents/ci-testing-specialist.md
+    
+  - name: unix-philosopher
+    description: Expert in UNIX philosophy, functional programming, and elegant code design
+    agent_file: agents/unix-philosopher.md
