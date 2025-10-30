@@ -1304,22 +1304,20 @@ format_bookmark_details_for_preview() {
         return 1
     fi
     
-    # Extract all fields efficiently using array to handle empty fields correctly
-    local values
-    values=$(echo "$bookmark" | jq -r '[.id, .description, .type, .command, .tags // "", .notes // "", .created, .modified // "null", .status, .access_count // 0, .last_accessed // "null", .frecency_score // 0] | @tsv')
-    IFS=$'\t' read -r -a fields <<< "$values"
-    local id="${fields[0]}"
-    local description="${fields[1]}"
-    local type="${fields[2]}"
-    local command="${fields[3]}"
-    local tags="${fields[4]}"
-    local notes="${fields[5]}"
-    local created="${fields[6]}"
-    local modified="${fields[7]}"
-    local status="${fields[8]}"
-    local access_count="${fields[9]}"
-    local last_accessed="${fields[10]}"
-    local frecency_score="${fields[11]}"
+    # Extract all fields efficiently - extract each field individually to handle all edge cases
+    local id description type command tags notes created modified status access_count last_accessed frecency_score
+    id=$(echo "$bookmark" | jq -r '.id // ""')
+    description=$(echo "$bookmark" | jq -r '.description // ""')
+    type=$(echo "$bookmark" | jq -r '.type // ""')
+    command=$(echo "$bookmark" | jq -r '.command // ""')
+    tags=$(echo "$bookmark" | jq -r '.tags // ""')
+    notes=$(echo "$bookmark" | jq -r '.notes // ""')
+    created=$(echo "$bookmark" | jq -r '.created // ""')
+    modified=$(echo "$bookmark" | jq -r '.modified // "null"')
+    status=$(echo "$bookmark" | jq -r '.status // ""')
+    access_count=$(echo "$bookmark" | jq -r '.access_count // 0')
+    last_accessed=$(echo "$bookmark" | jq -r '.last_accessed // "null"')
+    frecency_score=$(echo "$bookmark" | jq -r '.frecency_score // 0')
     
     # Format the output with clear labels using RST-style underlines
     echo "Bookmark Details"
