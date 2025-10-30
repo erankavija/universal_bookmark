@@ -1364,6 +1364,8 @@ format_bookmark_details_for_preview() {
     echo "Access Count:    $access_count"
     if [[ -n "$last_accessed" && "$last_accessed" != "null" ]]; then
         echo "Last Accessed:   $last_accessed"
+    else
+        echo "Last Accessed:   N/A"
     fi
     echo "Frecency Score:  $frecency_score"
 }
