@@ -1322,33 +1322,36 @@ format_bookmark_details_for_preview() {
     local frecency_score="${fields[11]}"
     
     # Format the output with clear labels using RST-style underlines
-    echo "BOOKMARK DETAILS"
+    echo "Bookmark Details"
     echo "================"
     echo ""
-    echo "Description: $description"
-    echo "Type:        $type"
-    echo "Status:      $status"
+    echo "Type:   $type"
+    echo "Status: $status"
     echo ""
-    echo "COMMAND"
+    echo "Description"
+    echo "-----------"
+    echo "$description"
+    echo ""
+    echo "Command"
     echo "-------"
     echo "$command"
     echo ""
     
     if [[ -n "$tags" ]]; then
-        echo "TAGS"
+        echo "Tags"
         echo "----"
         echo "$tags"
         echo ""
     fi
     
     if [[ -n "$notes" ]]; then
-        echo "NOTES"
+        echo "Notes"
         echo "-----"
         echo "$notes"
         echo ""
     fi
     
-    echo "METADATA"
+    echo "Metadata"
     echo "--------"
     echo "ID:          $id"
     echo "Created:     $created"
