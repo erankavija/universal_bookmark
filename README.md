@@ -64,6 +64,7 @@ The setup script will:
 - Create the necessary directory and file structure (including backups and hooks directories)
 - Add the `BOOKMARKS_DIR` environment variable to your shell configuration file
 - Add an alias `bookmark` for the bookmarks.sh script
+- Install shell completion scripts for Bash and Zsh (with user consent)
 - Create example hook scripts
 - Provide instructions for using the system
 
@@ -95,6 +96,50 @@ If you prefer a manual setup:
    ```
    (Replace `~/.zshrc` with your shell's configuration file if different)
 
+### Shell Completions
+
+Universal Bookmarks provides intelligent tab completion for both Bash and Zsh shells. The completion scripts enable:
+
+- **Command completion**: Tab-complete available commands (add, edit, delete, etc.)
+- **Type completion**: Tab-complete bookmark types when adding or updating bookmarks
+- **Bookmark description completion**: Tab-complete existing bookmark descriptions
+- **Flag completion**: Tab-complete available flags like `-y` or `--yes`
+
+#### Automatic Installation
+
+The `setup.sh` script automatically installs the appropriate completion script for your shell:
+
+- **Bash**: Installs `bookmark-completion.bash` to a bash completion directory
+- **Zsh**: Installs `_bookmark` to a zsh completion directory
+
+The setup script will ask for your consent before modifying configuration files and will guide you through the installation process.
+
+#### Manual Installation
+
+If you need to install completions manually:
+
+**For Bash:**
+```bash
+# Copy the completion script to a bash completion directory
+cp completions/bookmark-completion.bash ~/.local/share/bash-completion/completions/bookmark
+
+# Or source it directly in your .bashrc
+echo 'source /path/to/universal_bookmark/completions/bookmark-completion.bash' >> ~/.bashrc
+```
+
+**For Zsh:**
+```bash
+# Copy the completion script to a zsh completion directory
+mkdir -p ~/.zsh/completions
+cp completions/_bookmark ~/.zsh/completions/
+
+# Add the completion directory to fpath in your .zshrc
+echo 'fpath=(~/.zsh/completions $fpath)' >> ~/.zshrc
+echo 'autoload -Uz compinit && compinit' >> ~/.zshrc
+```
+
+After installation, restart your shell or run `source ~/.bashrc` (or `~/.zshrc` for Zsh) to activate completions.
+
 ## Usage
 
 After setup, you can use either the `bookmark` command (if you used the setup script) or the full path to `bookmarks.sh`.
@@ -105,6 +150,28 @@ After setup, you can use either the `bookmark` command (if you used the setup sc
 - **Direct Search**: Use `bookmark "search term"` to filter and execute a bookmark
 - **List All**: Run `bookmark list` to see all bookmarks in a machine-readable format (one per line with pipe-separated fields)
 - **Get Help**: Use `bookmark help` for full documentation
+
+### Non-Interactive Mode
+
+For automation and scripting purposes, Universal Bookmarks supports a non-interactive mode using the `-y` or `--yes` flag. This skips all confirmation prompts and uses default values:
+
+```bash
+# Delete a bookmark without confirmation
+bookmark -y delete "Description"
+
+# Add a bookmark in a script
+bookmark --yes add "Auto Bookmark" cmd "echo 'Automated task'" "automation"
+
+# Works with any command that requires confirmation
+bookmark -y obsolete "Old Bookmark"
+```
+
+This is particularly useful for:
+- **Scripting**: Automate bookmark management in shell scripts
+- **CI/CD Pipelines**: Manage bookmarks programmatically
+- **Batch Operations**: Process multiple bookmarks without user interaction
+
+The flag can be placed before the command name.
 
 ### Managing Bookmarks
 
@@ -400,19 +467,50 @@ Universal Bookmarks comes with comprehensive test suites to verify functionality
 - Verifying your installation is working correctly
 - Understanding the capabilities of the system
 
-Run the main test suite:
+### Test Suites
 
+The project includes multiple specialized test suites:
+
+**Main Test Suite:**
 ```bash
 ./test_bookmarks.sh
 ```
+Tests core functionality including adding, editing, updating, deleting bookmarks, and basic operations.
 
-Run the frecency-specific tests:
-
+**Frecency Tests:**
 ```bash
 ./test_frecency.sh
 ```
+Tests the frecency (frequency + recency) scoring system that automatically prioritizes your most-used bookmarks.
 
-The test suites create a temporary environment, test all functions, and clean up after themselves.
+**Editor Features Tests:**
+```bash
+./test_editor_features.sh
+```
+Tests the editor-based bookmark editing functionality, including the `edit` and `modify-add` commands.
+
+**Special Characters Tests:**
+```bash
+./test_special_chars.sh
+```
+Tests handling of special characters in bookmark descriptions, commands, tags, and notes to ensure robustness.
+
+**Type Execution Tests:**
+```bash
+./test_type_execution.sh
+```
+Tests type-specific execution logic for different bookmark types (url, pdf, script, ssh, etc.).
+
+**Run All Tests:**
+```bash
+# Run all test suites sequentially
+for test in test_*.sh; do
+    echo "Running $test..."
+    ./"$test"
+done
+```
+
+All test suites create a temporary environment, test their respective functions, and clean up after themselves. The test framework is modular and can be extended with new test suites as needed.
 
 ## Troubleshooting
 
