@@ -13,6 +13,8 @@
 
 Require Import Coq.ZArith.ZArith.
 Require Import Coq.Lists.List.
+Require Import Coq.Reals.Reals.
+Require Import Lia.
 Import ListNotations.
 
 Module ReproDot.
@@ -49,8 +51,8 @@ Axiom decode_SE_finite_sound :
   forall (d: R) (f: finite_SE),
     decode_double_SE d = FC_finite f ->
     (f.(f_S) >= 0)%Z /\
-    (f.(f_sign) = 1 \/ f.(f_sign) = -1) /\
-    (d = IZR (f.(f_sign)) * (IZR f.(f_S)) * (2 # 1) ^ (Z.to_nat f.(f_E)))%R.
+    ((f.(f_sign) = 1)%Z \/ (f.(f_sign) = -1)%Z) /\
+    (d = IZR (f.(f_sign)) * (IZR f.(f_S)) * powerRZ 2 f.(f_E))%R.
 
 Axiom decode_SE_special_sound :
   forall (d: R) (sp: special),
@@ -85,7 +87,7 @@ Definition acc_empty : acc := 0%Z.
 
 (* Update: add Sprod << shift, i.e., Sprod * 2^(shift) *)
 Definition acc_update (A: acc) (fx fy: finite_SE) : acc :=
-  (A + term_int fx fy * 2 ^ (Z.to_nat (term_shift fx fy)))%Z.
+  (A + term_int fx fy * Z.pow 2 (term_shift fx fy))%Z.
 
 (* Order independence holds by commutativity of + over Z *)
 Lemma acc_update_comm :
@@ -120,7 +122,7 @@ Theorem acc_fold_sound :
     (* Value of dotR equals the scaled integer sum *)
     let A := acc_fold acc_empty fxs fys in
     dotR xs ys =
-    (IZR A) * (2 # 1) ^ (Z.to_nat EMIN) (* Z * 2^EMIN *).
+    ((IZR A) * powerRZ 2 EMIN)%R (* Z * 2^EMIN *).
 Proof.
   (* Sketch:
      - Use decode_SE_finite_sound to rewrite each xi, yi into s*S*2^E.
@@ -140,7 +142,7 @@ Admitted.
 Parameter round_to_double : Z -> R.
 
 Axiom round_to_double_correct :
-  forall A, True.
+  forall (A: Z), True.
   (* TODO:
      - Use Flocq to show that rounding nearest-even of (A * 2^EMIN) to double
        matches IEEE-754 rounding, including subnormals and overflow to +/-Inf.

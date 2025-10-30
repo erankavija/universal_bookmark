@@ -1,0 +1,13 @@
+# Build directory
+/build/
+
+# Coq build artifacts
+*.vo
+*.vok
+*.vos
+*.glob
+*.aux
+.*.aux
+CoqMakefile
+CoqMakefile.conf
+.CoqMakefile.d
