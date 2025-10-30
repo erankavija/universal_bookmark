@@ -512,6 +512,24 @@ done
 
 All test suites create a temporary environment, test their respective functions, and clean up after themselves. The test framework is modular and can be extended with new test suites as needed.
 
+## Development
+
+### GitHub Copilot Custom Agents
+
+This project includes custom GitHub Copilot agents that provide specialized expertise for different aspects of development. These agents are configured in `.github/agents.yml` and located in `.github/agents/`:
+
+- **CI/Testing Specialist** (`ci-testing-specialist.md`)
+  - Expert in test automation, CI/CD pipelines, and quality assurance
+  - Best for: Writing tests, debugging test failures, optimizing CI workflows
+  
+- **UNIX Philosopher** (`unix-philosopher.md`)
+  - Expert in UNIX philosophy, functional programming, and elegant code design
+  - Best for: Code refactoring, architectural decisions, composability improvements
+
+When working with GitHub Copilot in this repository, these agents can be invoked to help with domain-specific tasks, ensuring code quality and adherence to project conventions.
+
+For more information about the project's development guidelines, see [`.github/copilot-instructions.md`](.github/copilot-instructions.md).
+
 ## Troubleshooting
 
 ### Common Issues
