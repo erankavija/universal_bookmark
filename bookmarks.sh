@@ -640,8 +640,6 @@ ${line}"
     printf "%b\t%b\t%b\t%b\t%b" "$description" "$type" "$command" "$tags" "$notes"
 }
 
-# Edit bookmark using external editor
-# Args: $1 - ID or description (optional, uses fzf if not provided)
 # Edit a bookmark using the configured editor
 # Args: $1 - ID or description (optional, uses fzf if not provided)
 edit_bookmark() {
