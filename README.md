@@ -229,7 +229,7 @@ bookmark list | grep '\[ssh\]'
 
 **Extract commands:**
 ```bash
-bookmark list | awk -F' \\| ' '{print $2}'
+bookmark list | awk -F' [|] ' '{print $2}'
 ```
 
 **Filter by tags:**

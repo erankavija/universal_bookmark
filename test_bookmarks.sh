@@ -62,7 +62,7 @@ run_test_suite() {
     fi
     
     # Test that list output is parseable with awk to extract commands
-    local extracted_command=$(./bookmarks.sh list | head -1 | awk -F' \\| ' '{print $2}')
+    local extracted_command=$(./bookmarks.sh list | head -1 | awk -F' [|] ' '{print $2}')
     if [ -n "$extracted_command" ]; then
         echo -e "${GREEN}✓ Test passed: Commands extractable with awk${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
