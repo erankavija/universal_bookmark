@@ -138,6 +138,87 @@ get_bookmark_by_id_or_desc() {
     fi
 }
 
+#=============================================================================
+# COMPOSABLE FILTER FUNCTIONS (UNIX Philosophy)
+#=============================================================================
+# These pure functions follow the filter pattern: read from stdin, write to stdout
+# They can be composed in pipelines for powerful data transformations
+
+# Filter: Extract all bookmarks from JSON file
+# Input: bookmarks.json file path
+# Output: JSON array of bookmark objects (one per line)
+filter_all_bookmarks() {
+    jq -c '.bookmarks[]' "$BOOKMARKS_FILE"
+}
+
+# Filter: Select active bookmarks only
+# Input: JSON bookmark objects (one per line) from stdin
+# Output: Filtered JSON bookmark objects
+filter_active() {
+    jq -c 'select(.status != "obsolete")'
+}
+
+# Filter: Select bookmarks by type
+# Args: $1 - bookmark type to filter by
+# Input: JSON bookmark objects from stdin
+# Output: Filtered JSON bookmark objects
+filter_by_type() {
+    local type="$1"
+    jq -c --arg type "$type" 'select(.type == $type)'
+}
+
+# Filter: Select bookmarks by tag (partial match)
+# Args: $1 - tag to search for
+# Input: JSON bookmark objects from stdin
+# Output: Filtered JSON bookmark objects
+filter_by_tag() {
+    local tag="$1"
+    jq -c --arg tag "$tag" 'select(.tags // "" | contains($tag))'
+}
+
+# Filter: Select bookmarks by status
+# Args: $1 - status (active, obsolete)
+# Input: JSON bookmark objects from stdin
+# Output: Filtered JSON bookmark objects
+filter_by_status() {
+    local status="$1"
+    jq -c --arg status "$status" 'select(.status == $status)'
+}
+
+# Transform: Extract specific field from bookmarks
+# Args: $1 - field name to extract
+# Input: JSON bookmark objects from stdin
+# Output: Field values (one per line)
+extract_field() {
+    local field="$1"
+    jq -r --arg field "$field" '.[$field] // ""'
+}
+
+# Transform: Format bookmark for display (single line)
+# Input: JSON bookmark objects from stdin
+# Output: Human-readable format "[type] description"
+format_bookmark_line() {
+    jq -r '"[\(.type)] \(.description)"'
+}
+
+# Transform: Sort bookmarks by frecency score (descending)
+# Input: JSON bookmark objects from stdin (as array)
+# Output: Sorted JSON bookmark objects
+sort_by_frecency() {
+    jq -s 'sort_by(-.frecency_score // 0) | .[]'
+}
+
+# Transform: Convert bookmarks to TSV format
+# Input: JSON bookmark objects from stdin
+# Output: TSV with columns: id, description, type, command, tags, status
+to_tsv() {
+    jq -r '[.id, .description, .type, .command, .tags // "", .status] | @tsv'
+}
+
+# Example pipeline usage:
+# filter_all_bookmarks | filter_active | filter_by_type "url" | format_bookmark_line
+# cat "$BOOKMARKS_FILE" | jq -c '.bookmarks[]' | filter_by_tag "work" | sort_by_frecency
+
 # Check if bookmark exists by description (or ID)
 # Args: $1 - description (or ID) to check
 # Returns: 0 if exists, 1 if not
