@@ -1517,6 +1517,8 @@ display_detailed_bookmarks() {
 }
 
 # List all bookmarks without executing them
+# Output format: [type] description | command | status | id | tags
+# Each bookmark is on a single line for easy processing with shell utilities
 # Args: $1 - show_details flag ("true" to show details, default "false")
 list_all_bookmarks() {
     local show_details="${1:-false}"
@@ -1524,11 +1526,40 @@ list_all_bookmarks() {
     # Validate JSON file first
     validate_bookmarks_file || return 1
     
-    echo -e "${BLUE}All Bookmarks:${NC}"
-    echo -e "${BLUE}-------------${NC}"
+    # Check if output is to a terminal for color decisions
+    local use_colors=false
+    if [ -t 1 ]; then
+        use_colors=true
+    fi
     
-    # Display bookmarks grouped by type
-    display_bookmarks_by_type
+    # Output one bookmark per line with essential information
+    # Format: [type] description | command | status | id | tags
+    jq -r '.bookmarks | sort_by(-.frecency_score // 0) | .[] | 
+        "[" + .type + "] " + .description + " | " + 
+        .command + " | " + 
+        .status + " | " + 
+        .id + " | " + 
+        (.tags // "")' "$BOOKMARKS_FILE" | \
+    while IFS= read -r line; do
+        if [[ "$use_colors" == "true" ]]; then
+            # Color output for terminal viewing
+            if [[ "$line" == *" | obsolete | "* ]]; then
+                echo -e "${RED}$line${NC}"
+            else
+                # Extract and color individual parts
+                if [[ "$line" =~ ^\[([^\]]+)\]\ (.*)\ \|\ (.*)\ \|\ (.*)\ \|\ (.*)\ \|\ (.*)$ ]]; then
+                    local type="${BASH_REMATCH[1]}"
+                    local rest="${BASH_REMATCH[2]} | ${BASH_REMATCH[3]} | ${BASH_REMATCH[4]} | ${BASH_REMATCH[5]} | ${BASH_REMATCH[6]}"
+                    echo -e "${CYAN}[${type}]${NC} ${rest}"
+                else
+                    echo "$line"
+                fi
+            fi
+        else
+            # Plain output for piping to other commands
+            echo "$line"
+        fi
+    done
     
     # Show detailed information if requested
     if [[ "$show_details" == "true" ]]; then
