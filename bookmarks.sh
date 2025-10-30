@@ -110,14 +110,14 @@ get_bookmark_by_id_or_desc() {
     fi
 }
 
-# Check if bookmark exists by description
-# Args: $1 - description to check
+# Check if bookmark exists by description (or ID)
+# Args: $1 - description (or ID) to check
 # Returns: 0 if exists, 1 if not
 bookmark_exists() {
     local description="$1"
-    local count
-    count=$(jq --arg desc "$description" '.bookmarks | map(select(.description == $desc)) | length' "$BOOKMARKS_FILE")
-    [[ "$count" -gt 0 ]]
+    local bookmark
+    bookmark=$(get_bookmark_by_id_or_desc "$description")
+    [[ -n "$bookmark" ]]
 }
 
 # Validate JSON file integrity
