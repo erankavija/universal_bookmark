@@ -140,10 +140,9 @@ create_issues() {
     for issue_json in "${ISSUES[@]}"; do
         count=$((count + 1))
         
-        # Parse JSON
-        title=$(echo "$issue_json" | jq -r '.title')
-        body=$(echo "$issue_json" | jq -r '.body')
-        labels=$(echo "$issue_json" | jq -r '.labels | join(",")')
+        # Parse JSON - extract all fields in one jq call
+        local parsed=$(echo "$issue_json" | jq -r '[.title, .body, (.labels | join(","))] | @tsv')
+        IFS=$'\t' read -r title body labels <<< "$parsed"
         
         echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
         echo -e "${BLUE}Issue $count: $title${NC}"

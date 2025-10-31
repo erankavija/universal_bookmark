@@ -56,7 +56,7 @@ ${BOLD}OPTIONS:${NC}
     -q, --quiet         Show only summary
     -f, --fail-fast     Stop on first test failure
     -l, --list          List available test suites
-    -p, --parallel      Run tests in parallel (experimental)
+    --parallel          Run tests in parallel (not yet implemented)
     
 ${BOLD}TEST_PATTERN:${NC}
     Optional pattern to filter test files (e.g., 'frecency' or 'bookmarks')
@@ -95,11 +95,6 @@ list_test_suites() {
 check_dependencies() {
     local missing_deps=()
     
-    # Check for jq
-    if ! command -v jq &> /dev/null; then
-        missing_deps+=("jq")
-    fi
-    
     # Check for fzf (with custom path support)
     if [ -n "${FZF_PATH:-}" ]; then
         export PATH="$FZF_PATH:$PATH"
@@ -107,6 +102,11 @@ check_dependencies() {
     
     if ! command -v fzf &> /dev/null; then
         missing_deps+=("fzf")
+    fi
+    
+    # Check for jq (used by the test scripts themselves)
+    if ! command -v jq &> /dev/null; then
+        missing_deps+=("jq")
     fi
     
     if [ ${#missing_deps[@]} -gt 0 ]; then
@@ -268,7 +268,8 @@ main() {
                 exit 0
                 ;;
             -p|--parallel)
-                echo -e "${YELLOW}Warning: Parallel execution is experimental and not yet implemented${NC}"
+                echo -e "${YELLOW}Note: Parallel execution is not yet implemented. See Issue #2 in ISSUES_TO_CREATE.md${NC}"
+                echo ""
                 shift
                 ;;
             -*)
