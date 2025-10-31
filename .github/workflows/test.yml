@@ -27,21 +27,8 @@ jobs:
         
     - name: Make scripts executable
       run: |
-        chmod +x test_bookmarks.sh test_editor_features.sh test_frecency.sh test_special_chars.sh test_type_execution.sh bookmarks.sh
+        chmod +x run_tests.sh bookmarks.sh test_*.sh
         
     - name: Run all tests
       run: |
-        echo "Running test_bookmarks.sh..."
-        ./test_bookmarks.sh
-        echo ""
-        echo "Running test_editor_features.sh..."
-        ./test_editor_features.sh
-        echo ""
-        echo "Running test_frecency.sh..."
-        ./test_frecency.sh
-        echo ""
-        echo "Running test_special_chars.sh..."
-        ./test_special_chars.sh
-        echo ""
-        echo "Running test_type_execution.sh..."
-        ./test_type_execution.sh
+        ./run_tests.sh
