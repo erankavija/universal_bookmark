@@ -13,16 +13,39 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+      
+    - name: Cache apt packages
+      uses: actions/cache@v3
+      with:
+        path: /var/cache/apt
+        key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/test.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-
       
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y jq
+      
+    - name: Cache fzf
+      uses: actions/cache@v3
+      id: cache-fzf
+      with:
+        path: ~/.fzf
+        key: ${{ runner.os }}-fzf-0.46.0
+        restore-keys: |
+          ${{ runner.os }}-fzf-
         
     - name: Install fzf
+      if: steps.cache-fzf.outputs.cache-hit != 'true'
       run: |
         git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
         ~/.fzf/install --bin
+        
+    - name: Add fzf to PATH
+      run: |
         echo "$HOME/.fzf/bin" >> $GITHUB_PATH
         
     - name: Make scripts executable
