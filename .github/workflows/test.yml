@@ -19,7 +19,9 @@ jobs:
     - name: Cache apt packages
       uses: actions/cache@v3
       with:
-        path: /var/cache/apt
+        path: |
+          /var/cache/apt/archives
+          /var/lib/apt/lists
         key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/test.yml') }}
         restore-keys: |
           ${{ runner.os }}-apt-
