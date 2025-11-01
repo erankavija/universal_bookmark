@@ -354,6 +354,11 @@ main() {
         "$SCRIPT_DIR/run_with_coverage.sh" "${tests_to_run[@]}"
         local coverage_exit_code=$?
         
+        # Warn if coverage collection failed, but continue with tests
+        if [ $coverage_exit_code -ne 0 ]; then
+            echo -e "${YELLOW}Warning: Coverage collection encountered issues but tests will continue.${NC}"
+        fi
+        
         # Still run normal tests to get pass/fail summary
         echo ""
         echo -e "${BOLD}${BLUE}Running tests to collect results...${NC}"

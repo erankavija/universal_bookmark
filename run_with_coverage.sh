@@ -145,9 +145,9 @@ display_coverage_summary() {
     echo ""
     
     # Display coverage status with color (using awk for portable floating point comparison)
-    if (( $(awk "BEGIN {print ($line_coverage >= 80)}") )); then
+    if [ "$(awk "BEGIN {print ($line_coverage >= 80)}")" = "1" ]; then
         echo -e "${BOLD}${GREEN}✓ Excellent coverage! (>= 80%)${NC}"
-    elif (( $(awk "BEGIN {print ($line_coverage >= 60)}") )); then
+    elif [ "$(awk "BEGIN {print ($line_coverage >= 60)}")" = "1" ]; then
         echo -e "${BOLD}${YELLOW}⚠ Good coverage, but could be improved (>= 60%)${NC}"
     else
         echo -e "${BOLD}${RED}⚠ Coverage could be significantly improved (< 60%)${NC}"
