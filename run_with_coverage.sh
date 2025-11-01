@@ -93,12 +93,7 @@ merge_coverage_reports() {
     fi
     
     # Merge using kcov's merge functionality
-    # Simply copy all coverage data to merged directory
-    for dir in "${coverage_dirs[@]}"; do
-        cp -r "$dir"/* "$merged_dir/" 2>/dev/null || true
-    done
-    
-    # Run kcov --merge to combine them
+    # kcov --merge handles the merging internally
     kcov --merge "$merged_dir" "${coverage_dirs[@]}" 2>/dev/null || {
         echo -e "${YELLOW}⚠ kcov merge had issues, but continuing...${NC}"
     }
@@ -129,8 +124,9 @@ display_coverage_summary() {
         local branch_rate=$(xmllint --xpath "string(/coverage/@branch-rate)" "$merged_dir/cobertura.xml" 2>/dev/null || echo "0")
     else
         # Fallback to grep/sed (portable across systems)
-        local line_rate=$(grep 'line-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*line-rate="\([0-9.]*\)".*/\1/' || echo "0")
-        local branch_rate=$(grep 'branch-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*branch-rate="\([0-9.]*\)".*/\1/' || echo "0")
+        # Pattern: [0-9]*\.?[0-9]* matches valid decimal numbers (e.g., 0.85, 1, 0.5)
+        local line_rate=$(grep 'line-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*line-rate="\([0-9]*\.*[0-9]*\)".*/\1/' || echo "0")
+        local branch_rate=$(grep 'branch-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*branch-rate="\([0-9]*\.*[0-9]*\)".*/\1/' || echo "0")
     fi
     
     # Convert to percentage
