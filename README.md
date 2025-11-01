@@ -467,47 +467,54 @@ Universal Bookmarks comes with comprehensive test suites to verify functionality
 - Verifying your installation is working correctly
 - Understanding the capabilities of the system
 
-### Test Suites
+### Quick Start
 
-The project includes multiple specialized test suites:
-
-**Main Test Suite:**
+Run all tests with the convenience test runner:
 ```bash
-./test_bookmarks.sh
+./run_tests.sh
 ```
+
+The test runner provides:
+- Aggregated test results and summary
+- Colored, formatted output
+- Options for verbose, quiet, and fail-fast modes
+- Ability to run specific test suites
+- Dependency checking
+
+### Test Runner Options
+
+```bash
+./run_tests.sh              # Run all tests
+./run_tests.sh -v           # Verbose mode (show detailed output)
+./run_tests.sh -q           # Quiet mode (summary only)
+./run_tests.sh -f           # Fail-fast mode (stop on first failure)
+./run_tests.sh --list       # List available test suites
+./run_tests.sh frecency     # Run only tests matching 'frecency'
+./run_tests.sh --help       # Show help message
+```
+
+### Individual Test Suites
+
+The project includes multiple specialized test suites that can also be run individually:
+
+**Main Test Suite (`test_bookmarks.sh`):**
 Tests core functionality including adding, editing, updating, deleting bookmarks, and basic operations.
 
-**Frecency Tests:**
-```bash
-./test_frecency.sh
-```
+**Frecency Tests (`test_frecency.sh`):**
 Tests the frecency (frequency + recency) scoring system that automatically prioritizes your most-used bookmarks.
 
-**Editor Features Tests:**
-```bash
-./test_editor_features.sh
-```
+**Editor Features Tests (`test_editor_features.sh`):**
 Tests the editor-based bookmark editing functionality, including the `edit` and `modify-add` commands.
 
-**Special Characters Tests:**
-```bash
-./test_special_chars.sh
-```
+**Special Characters Tests (`test_special_chars.sh`):**
 Tests handling of special characters in bookmark descriptions, commands, tags, and notes to ensure robustness.
 
-**Type Execution Tests:**
-```bash
-./test_type_execution.sh
-```
+**Type Execution Tests (`test_type_execution.sh`):**
 Tests type-specific execution logic for different bookmark types (url, pdf, script, ssh, etc.).
 
-**Run All Tests:**
+**Run individual test:**
 ```bash
-# Run all test suites sequentially
-for test in test_*.sh; do
-    echo "Running $test..."
-    ./"$test"
-done
+./test_bookmarks.sh         # Run a specific test suite
 ```
 
 All test suites create a temporary environment, test their respective functions, and clean up after themselves. The test framework is modular and can be extended with new test suites as needed.
