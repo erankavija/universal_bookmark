@@ -57,6 +57,7 @@ ${BOLD}OPTIONS:${NC}
     -q, --quiet         Show only summary
     -f, --fail-fast     Stop on first test failure
     -l, --list          List available test suites
+    -c, --coverage      Run tests with code coverage collection (requires kcov)
     --parallel          Run tests in parallel (not yet implemented)
     
 ${BOLD}TEST_PATTERN:${NC}
@@ -67,6 +68,7 @@ ${BOLD}EXAMPLES:${NC}
     $0 -v               # Run all tests with verbose output
     $0 frecency         # Run only frecency tests
     $0 -f bookmarks     # Run bookmark tests, stop on first failure
+    $0 --coverage       # Run all tests with coverage collection
 
 ${BOLD}ENVIRONMENT:${NC}
     Set FZF_PATH if fzf is not in your PATH:
@@ -228,6 +230,18 @@ print_summary() {
     fi
     
     echo -e "  Total time:   ${CYAN}${total_time}s${NC}"
+    
+    # Display coverage summary if available
+    local coverage_summary="$SCRIPT_DIR/coverage/summary.txt"
+    if [ -f "$coverage_summary" ]; then
+        echo ""
+        echo -e "${BOLD}Coverage:${NC}"
+        local line_coverage=$(grep "COVERAGE_LINE_RATE=" "$coverage_summary" | cut -d'=' -f2)
+        local branch_coverage=$(grep "COVERAGE_BRANCH_RATE=" "$coverage_summary" | cut -d'=' -f2)
+        echo -e "  Line coverage:   ${CYAN}${line_coverage}%${NC}"
+        echo -e "  Branch coverage: ${CYAN}${branch_coverage}%${NC}"
+    fi
+    
     echo ""
     
     if [ $FAILED_SUITES -eq 0 ]; then
@@ -243,6 +257,7 @@ main() {
     local verbose=false
     local quiet=false
     local fail_fast=false
+    local coverage=false
     local test_pattern=""
     
     # Parse arguments
@@ -262,6 +277,10 @@ main() {
                 ;;
             -f|--fail-fast)
                 fail_fast=true
+                shift
+                ;;
+            -c|--coverage)
+                coverage=true
                 shift
                 ;;
             -l|--list)
@@ -323,6 +342,27 @@ main() {
         fi
     else
         tests_to_run=("${TEST_FILES[@]}")
+    fi
+    
+    # If coverage mode is enabled, delegate to coverage wrapper
+    if [ "$coverage" = "true" ]; then
+        if [ ! -x "$SCRIPT_DIR/run_with_coverage.sh" ]; then
+            chmod +x "$SCRIPT_DIR/run_with_coverage.sh"
+        fi
+        
+        # Run coverage wrapper with test files
+        "$SCRIPT_DIR/run_with_coverage.sh" "${tests_to_run[@]}"
+        local coverage_exit_code=$?
+        
+        # Warn if coverage collection failed, but continue with tests
+        if [ $coverage_exit_code -ne 0 ]; then
+            echo -e "${YELLOW}Warning: Coverage collection encountered issues but tests will continue.${NC}"
+        fi
+        
+        # Still run normal tests to get pass/fail summary
+        echo ""
+        echo -e "${BOLD}${BLUE}Running tests to collect results...${NC}"
+        echo ""
     fi
     
     # Run tests

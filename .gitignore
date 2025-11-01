@@ -1,0 +1,14 @@
+# Test coverage reports
+coverage/
+
+# Temporary test directories
+test_*/
+
+# Editor backups and swap files
+*~
+*.swp
+*.swo
+
+# OS-specific files
+.DS_Store
+Thumbs.db
