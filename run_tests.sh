@@ -29,6 +29,7 @@ TEST_FILES=(
     "test_editor_features.sh"
     "test_special_chars.sh"
     "test_type_execution.sh"
+    "test_composable_filters.sh"
 )
 
 # Global counters
@@ -289,7 +290,7 @@ main() {
         echo ""
         echo -e "${BOLD}${BLUE}╔════════════════════════════════════════════════╗${NC}"
         echo -e "${BOLD}${BLUE}║                                                ║${NC}"
-        echo -e "${BOLD}${BLUE}║     Universal Bookmarks Test Runner           ║${NC}"
+        echo -e "${BOLD}${BLUE}║     Universal Bookmarks Test Runner            ║${NC}"
         echo -e "${BOLD}${BLUE}║                                                ║${NC}"
         echo -e "${BOLD}${BLUE}╚════════════════════════════════════════════════╝${NC}"
         echo ""

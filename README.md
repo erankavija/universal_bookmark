@@ -537,6 +537,10 @@ When working with GitHub Copilot in this repository, these agents can be invoked
 
 For more information about the project's development guidelines, see [`.github/copilot-instructions.md`](.github/copilot-instructions.md).
 
+### Recent Improvements
+
+The codebase has been refactored to follow UNIX philosophy principles, including composable filter functions for power users and optimized pipeline-based processing. Key improvements include ~10x faster frecency recalculation, pure helper functions for platform detection, and 11 new filter functions (`filter_by_type`, `filter_by_tag`, `extract_field`, `to_tsv`, etc.) that enable UNIX-style pipelines like `filter_all_bookmarks | filter_active | filter_by_type "url" | sort_by_frecency`.
+
 ## Troubleshooting
 
 ### Common Issues

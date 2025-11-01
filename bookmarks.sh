@@ -72,6 +72,34 @@ fi
 # UTILITY FUNCTIONS
 #=============================================================================
 
+# Pure function to detect system opener command
+# Returns: opener command name (xdg-open, open, start) or empty string
+# This is a pure function with no side effects, following UNIX philosophy
+detect_system_opener() {
+    if command -v xdg-open &> /dev/null; then
+        echo "xdg-open"
+    elif command -v open &> /dev/null; then
+        echo "open"
+    elif command -v start &> /dev/null; then
+        echo "start"
+    else
+        echo ""
+    fi
+}
+
+# Pure function to detect default editor
+# Returns: editor command (BOOKMARKS_EDITOR or EDITOR or vi)
+detect_editor() {
+    echo "${BOOKMARKS_EDITOR:-${EDITOR:-vi}}"
+}
+
+# Pure function to check if command/tool is available
+# Args: $1 - command name to check
+# Returns: 0 if available, 1 if not
+is_command_available() {
+    command -v "$1" &> /dev/null
+}
+
 # Generate a unique ID for bookmarks
 # Returns: timestamp_randomstring format
 generate_id() {
@@ -109,6 +137,87 @@ get_bookmark_by_id_or_desc() {
         jq -r --arg desc "$id_or_desc" '.bookmarks[] | select(.description == $desc)' "$BOOKMARKS_FILE"
     fi
 }
+
+#=============================================================================
+# COMPOSABLE FILTER FUNCTIONS (UNIX Philosophy)
+#=============================================================================
+# These pure functions follow the filter pattern: read from stdin, write to stdout
+# They can be composed in pipelines for powerful data transformations
+
+# Filter: Extract all bookmarks from JSON file
+# Input: bookmarks.json file path
+# Output: JSON array of bookmark objects (one per line)
+filter_all_bookmarks() {
+    jq -c '.bookmarks[]' "$BOOKMARKS_FILE"
+}
+
+# Filter: Select active bookmarks only
+# Input: JSON bookmark objects (one per line) from stdin
+# Output: Filtered JSON bookmark objects
+filter_active() {
+    jq -c 'select(.status != "obsolete")'
+}
+
+# Filter: Select bookmarks by type
+# Args: $1 - bookmark type to filter by
+# Input: JSON bookmark objects from stdin
+# Output: Filtered JSON bookmark objects
+filter_by_type() {
+    local type="$1"
+    jq -c --arg type "$type" 'select(.type == $type)'
+}
+
+# Filter: Select bookmarks by tag (partial match)
+# Args: $1 - tag to search for
+# Input: JSON bookmark objects from stdin
+# Output: Filtered JSON bookmark objects
+filter_by_tag() {
+    local tag="$1"
+    jq -c --arg tag "$tag" 'select(.tags // "" | contains($tag))'
+}
+
+# Filter: Select bookmarks by status
+# Args: $1 - status (active, obsolete)
+# Input: JSON bookmark objects from stdin
+# Output: Filtered JSON bookmark objects
+filter_by_status() {
+    local status="$1"
+    jq -c --arg status "$status" 'select(.status == $status)'
+}
+
+# Transform: Extract specific field from bookmarks
+# Args: $1 - field name to extract
+# Input: JSON bookmark objects from stdin
+# Output: Field values (one per line)
+extract_field() {
+    local field="$1"
+    jq -r --arg field "$field" '.[$field] // ""'
+}
+
+# Transform: Format bookmark for display (single line)
+# Input: JSON bookmark objects from stdin
+# Output: Human-readable format "[type] description"
+format_bookmark_line() {
+    jq -r '"[\(.type)] \(.description)"'
+}
+
+# Transform: Sort bookmarks by frecency score (descending)
+# Input: JSON bookmark objects from stdin (as array)
+# Output: Sorted JSON bookmark objects
+sort_by_frecency() {
+    jq -s 'sort_by(-.frecency_score // 0) | .[]'
+}
+
+# Transform: Convert bookmarks to TSV format
+# Input: JSON bookmark objects from stdin
+# Output: TSV with columns: id, description, type, command, tags, status
+to_tsv() {
+    jq -r '[.id, .description, .type, .command, .tags // "", .status] | @tsv'
+}
+
+# Example pipeline usage:
+# filter_all_bookmarks | filter_active | filter_by_type "url" | format_bookmark_line
+# cat "$BOOKMARKS_FILE" | jq -c '.bookmarks[]' | filter_by_tag "work" | sort_by_frecency
 
 # Check if bookmark exists by description (or ID)
 # Args: $1 - description (or ID) to check
@@ -208,6 +317,61 @@ calculate_frecency() {
     echo "$frecency"
 }
 
+# Calculate frecency scores for all bookmarks using pipeline approach
+# This is a pure function that reads from stdin and writes to stdout
+# Input: JSON array of bookmarks
+# Output: TSV with format: index access_count last_accessed
+# This allows for efficient batch processing through awk
+extract_frecency_data() {
+    jq -r '.bookmarks | to_entries[] | 
+        [.key, .value.access_count // 0, .value.last_accessed // "null"] | 
+        @tsv'
+}
+
+# Calculate frecency scores in a batch using awk (pure function)
+# Input: TSV with format: index access_count last_accessed (from stdin)
+# Output: TSV with format: index frecency_score
+batch_calculate_frecency() {
+    local current_time
+    current_time=$(date +%s)
+    
+    awk -F'\t' -v current_time="$current_time" '
+    function date_to_epoch(date_str) {
+        # Parse YYYY-MM-DD HH:MM:SS format
+        if (match(date_str, /^([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})/, parts)) {
+            # Convert to epoch using date command (portable approach)
+            cmd = "date -d \"" date_str "\" +%s 2>/dev/null || echo 0"
+            cmd | getline epoch
+            close(cmd)
+            return epoch + 0
+        }
+        return 0
+    }
+    
+    {
+        index = $1
+        access_count = $2 + 0
+        last_accessed = $3
+        
+        if (last_accessed == "null" || last_accessed == "" || access_count == 0) {
+            print index "\t0"
+        } else {
+            # Try to parse as epoch first, then as date string
+            if (last_accessed ~ /^[0-9]+$/) {
+                epoch = last_accessed + 0
+            } else {
+                epoch = date_to_epoch(last_accessed)
+            }
+            
+            age = current_time - epoch
+            
+            # Calculate frecency: 10000 * rank * (3.75 / ((0.0001 * age + 1) + 0.25))
+            frecency = 10000 * access_count * (3.75 / ((0.0001 * age + 1) + 0.25))
+            print index "\t" int(frecency + 0.5)
+        }
+    }'
+}
+
 # Update bookmark access statistics when it's executed
 # Args: $1 - bookmark ID or description
 update_bookmark_access() {
@@ -258,8 +422,9 @@ update_bookmark_access() {
     echo "$updated_json" > "$BOOKMARKS_FILE"
 }
 
-# Recalculate frecency scores for all bookmarks
+# Recalculate frecency scores for all bookmarks using pipeline approach
 # This is useful for updating scores after time has passed
+# Uses pure functions and pipelines following UNIX philosophy
 recalculate_all_frecency() {
     validate_bookmarks_file || return 1
     
@@ -298,40 +463,36 @@ recalculate_all_frecency() {
     # We acquired the lock, ensure it's removed on exit/error
     trap "rmdir '$lock_file' 2>/dev/null || true" RETURN
     
-    local updated_json
-    updated_json=$(jq '.bookmarks |= map(
-        . as $bookmark |
-        if (.access_count // 0) > 0 and .last_accessed != null then
-            . + {frecency_score: (
-                if .last_accessed == null then 0
-                else
-                    # This is a placeholder - actual calculation done in shell
-                    .frecency_score // 0
-                end
-            )}
+    # Pipeline approach: Extract data -> Calculate scores -> Update JSON
+    # This is much more efficient than the previous loop-based approach
+    local frecency_scores
+    frecency_scores=$(cat "$BOOKMARKS_FILE" | extract_frecency_data | batch_calculate_frecency)
+    
+    # Build jq arguments for batch update
+    local jq_args=""
+    while IFS=$'\t' read -r index score; do
+        jq_args="$jq_args --argjson idx$index $index --argjson score$index $score"
+    done <<< "$frecency_scores"
+    
+    # Generate jq update script dynamically
+    local jq_script='.bookmarks = [.bookmarks | to_entries[] | '
+    local first=true
+    while IFS=$'\t' read -r index score; do
+        if [[ "$first" == "true" ]]; then
+            jq_script="${jq_script}if .key == \$idx$index then .value.frecency_score = \$score$index"
+            first=false
         else
-            . + {frecency_score: 0}
-        end
-    )' "$BOOKMARKS_FILE")
+            jq_script="${jq_script} elif .key == \$idx$index then .value.frecency_score = \$score$index"
+        fi
+    done <<< "$frecency_scores"
+    jq_script="${jq_script} else .value end | .value]"
     
-    # Now calculate actual frecency for each bookmark
-    local bookmarks_json
-    bookmarks_json=$(echo "$updated_json" | jq -c '.bookmarks[]')
-    
-    local result='{"bookmarks":[]}'
-    while IFS= read -r bookmark; do
-        local access_count last_accessed
-        access_count=$(echo "$bookmark" | jq -r '.access_count // 0')
-        last_accessed=$(echo "$bookmark" | jq -r '.last_accessed // "null"')
-        
-        local frecency
-        frecency=$(calculate_frecency "$access_count" "$last_accessed")
-        
-        bookmark=$(echo "$bookmark" | jq --argjson score "$frecency" '. + {frecency_score: $score}')
-        result=$(echo "$result" | jq --argjson bookmark "$bookmark" '.bookmarks += [$bookmark]')
-    done <<< "$bookmarks_json"
-    
-    echo "$result" > "$BOOKMARKS_FILE"
+    # Apply updates in single jq call
+    if [[ -n "$jq_args" ]]; then
+        local updated_json
+        updated_json=$(jq $jq_args "$jq_script" "$BOOKMARKS_FILE")
+        echo "$updated_json" > "$BOOKMARKS_FILE"
+    fi
 }
 
 #=============================================================================
@@ -678,8 +839,9 @@ edit_bookmark() {
     # Write formatted bookmark to temp file
     format_bookmark_for_editor "$description" "$type" "$command" "$tags" "$notes" > "$tmpfile"
     
-    # Get editor command
-    local editor="${BOOKMARKS_EDITOR:-${EDITOR:-vi}}"
+    # Get editor command using pure function
+    local editor
+    editor=$(detect_editor)
     
     echo -e "${BLUE}Opening editor to edit bookmark: ${CYAN}$description${NC}"
     
@@ -765,8 +927,9 @@ modify_add_bookmark() {
     # Write formatted bookmark to temp file
     format_bookmark_for_editor "$description" "$type" "$command" "$tags" "$notes" > "$tmpfile"
     
-    # Get editor command
-    local editor="${BOOKMARKS_EDITOR:-${EDITOR:-vi}}"
+    # Get editor command using pure function
+    local editor
+    editor=$(detect_editor)
     
     echo -e "${BLUE}Opening editor to create new bookmark based on: ${CYAN}$description${NC}"
     
@@ -1095,15 +1258,9 @@ execute_bookmark_by_type() {
     local command="$2"
     local description="$3"
     
-    # Detect the OS for cross-platform compatibility
-    local open_cmd=""
-    if command -v xdg-open &> /dev/null; then
-        open_cmd="xdg-open"
-    elif command -v open &> /dev/null; then
-        open_cmd="open"  # macOS
-    elif command -v start &> /dev/null; then
-        open_cmd="start"  # Windows/WSL
-    fi
+    # Use pure function to detect system opener
+    local open_cmd
+    open_cmd=$(detect_system_opener)
     
     case "$type" in
         url|folder|file)
@@ -1123,7 +1280,7 @@ execute_bookmark_by_type() {
             local file_part=$(echo "$command" | cut -d'#' -f1)
             local page_part=$(echo "$command" | grep -oP '(?<=#page=)[0-9]+' || echo "")
             # Open with zathura if available, otherwise fail with message
-            if command -v zathura &> /dev/null; then
+            if is_command_available zathura; then
                 if [ -n "$page_part" ]; then
                     echo -e "${GREEN}Opening PDF with zathura at page $page_part: ${CYAN}$file_part${NC}"
                     zathura "$file_part" --page "$page_part" --fork
@@ -1140,15 +1297,16 @@ execute_bookmark_by_type() {
             # For notes, try to open with system default or fall back to less/cat
             if [ -n "$open_cmd" ]; then
                 eval "$open_cmd $command"
-            elif command -v less &> /dev/null; then
+            elif is_command_available less; then
                 eval "less $command"
             else
                 eval "cat $command"
             fi
             ;;
         edit)
-            # For edit type, use BOOKMARKS_EDITOR if defined, otherwise EDITOR
-            local editor="${BOOKMARKS_EDITOR:-${EDITOR:-vi}}"
+            # For edit type, use pure function to detect editor
+            local editor
+            editor=$(detect_editor)
             echo -e "${GREEN}Opening with $editor: ${CYAN}$description${NC}"
             eval "$editor $command"
             ;;
