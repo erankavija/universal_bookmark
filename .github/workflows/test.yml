@@ -13,17 +13,46 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 1
+      
+    - name: Cache apt packages
+      uses: actions/cache@v3
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-apt-jq-${{ hashFiles('.github/workflows/test.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-apt-jq-
+          ${{ runner.os }}-apt-
       
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y jq
+      
+    - name: Cache fzf
+      uses: actions/cache@v3
+      id: cache-fzf
+      with:
+        path: ~/.fzf
+        key: ${{ runner.os }}-fzf-${{ hashFiles('.github/workflows/test.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-fzf-
         
     - name: Install fzf
+      if: steps.cache-fzf.outputs.cache-hit != 'true'
       run: |
         git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
         ~/.fzf/install --bin
-        echo "$HOME/.fzf/bin" >> $GITHUB_PATH
+        
+    - name: Add fzf to PATH
+      run: |
+        if [ -f "$HOME/.fzf/bin/fzf" ]; then
+          echo "$HOME/.fzf/bin" >> $GITHUB_PATH
+        else
+          echo "Warning: fzf binary not found in cache" >&2
+          exit 1
+        fi
         
     - name: Make scripts executable
       run: |
