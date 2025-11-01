@@ -19,11 +19,10 @@ jobs:
     - name: Cache apt packages
       uses: actions/cache@v3
       with:
-        path: |
-          /var/cache/apt/archives
-          /var/lib/apt/lists
-        key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/test.yml') }}
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-apt-jq-${{ hashFiles('.github/workflows/test.yml') }}
         restore-keys: |
+          ${{ runner.os }}-apt-jq-
           ${{ runner.os }}-apt-
       
     - name: Install dependencies
@@ -36,7 +35,7 @@ jobs:
       id: cache-fzf
       with:
         path: ~/.fzf
-        key: ${{ runner.os }}-fzf-0.46.0
+        key: ${{ runner.os }}-fzf-${{ hashFiles('.github/workflows/test.yml') }}
         restore-keys: |
           ${{ runner.os }}-fzf-
         
