@@ -519,10 +519,6 @@ Tests type-specific execution logic for different bookmark types (url, pdf, scri
 
 All test suites create a temporary environment, test their respective functions, and clean up after themselves. The test framework is modular and can be extended with new test suites as needed.
 
-### Testing Improvements
-
-For proposed testing improvements and future enhancements, see [TESTING_IMPROVEMENTS.md](TESTING_IMPROVEMENTS.md).
-
 ## Development
 
 ### GitHub Copilot Custom Agents
