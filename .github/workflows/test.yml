@@ -47,7 +47,12 @@ jobs:
         
     - name: Add fzf to PATH
       run: |
-        echo "$HOME/.fzf/bin" >> $GITHUB_PATH
+        if [ -f "$HOME/.fzf/bin/fzf" ]; then
+          echo "$HOME/.fzf/bin" >> $GITHUB_PATH
+        else
+          echo "Warning: fzf binary not found in cache" >&2
+          exit 1
+        fi
         
     - name: Make scripts executable
       run: |
