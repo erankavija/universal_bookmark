@@ -128,9 +128,9 @@ display_coverage_summary() {
         local line_rate=$(xmllint --xpath "string(/coverage/@line-rate)" "$merged_dir/cobertura.xml" 2>/dev/null || echo "0")
         local branch_rate=$(xmllint --xpath "string(/coverage/@branch-rate)" "$merged_dir/cobertura.xml" 2>/dev/null || echo "0")
     else
-        # Fallback to grep/sed
-        local line_rate=$(grep -oP 'line-rate="\K[0-9.]+' "$merged_dir/cobertura.xml" | head -1 || echo "0")
-        local branch_rate=$(grep -oP 'branch-rate="\K[0-9.]+' "$merged_dir/cobertura.xml" | head -1 || echo "0")
+        # Fallback to grep/sed (portable across systems)
+        local line_rate=$(grep 'line-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*line-rate="\([0-9.]*\)".*/\1/' || echo "0")
+        local branch_rate=$(grep 'branch-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*branch-rate="\([0-9.]*\)".*/\1/' || echo "0")
     fi
     
     # Convert to percentage
@@ -144,10 +144,10 @@ display_coverage_summary() {
     echo -e "  ${BOLD}Cobertura XML:${NC}   ${CYAN}${merged_dir}/cobertura.xml${NC}"
     echo ""
     
-    # Display coverage status with color
-    if (( $(echo "$line_coverage >= 80" | bc -l) )); then
+    # Display coverage status with color (using awk for portable floating point comparison)
+    if (( $(awk "BEGIN {print ($line_coverage >= 80)}") )); then
         echo -e "${BOLD}${GREEN}✓ Excellent coverage! (>= 80%)${NC}"
-    elif (( $(echo "$line_coverage >= 60" | bc -l) )); then
+    elif (( $(awk "BEGIN {print ($line_coverage >= 60)}") )); then
         echo -e "${BOLD}${YELLOW}⚠ Good coverage, but could be improved (>= 60%)${NC}"
     else
         echo -e "${BOLD}${RED}⚠ Coverage could be significantly improved (< 60%)${NC}"
