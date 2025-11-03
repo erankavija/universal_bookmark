@@ -29,6 +29,38 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y jq
+        
+    - name: Cache kcov
+      uses: actions/cache@v3
+      id: cache-kcov
+      with:
+        path: ~/kcov
+        key: ${{ runner.os }}-kcov-v43-${{ hashFiles('.github/workflows/test.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-kcov-v43-
+          
+    - name: Build and install kcov
+      if: steps.cache-kcov.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get install -y cmake g++ pkg-config libcurl4-openssl-dev libelf-dev libdw-dev binutils-dev libiberty-dev
+        git clone --depth 1 --branch v43 https://github.com/SimonKagstrom/kcov.git ~/kcov-src
+        cd ~/kcov-src
+        mkdir build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=$HOME/kcov ..
+        make
+        make install
+        
+    - name: Add kcov to PATH
+      run: |
+        echo "$HOME/kcov/bin" >> $GITHUB_PATH
+        if [ -f "$HOME/kcov/bin/kcov" ]; then
+          echo "kcov installed successfully"
+          $HOME/kcov/bin/kcov --version
+        else
+          echo "Error: kcov binary not found" >&2
+          exit 1
+        fi
       
     - name: Cache fzf
       uses: actions/cache@v3
@@ -42,6 +74,7 @@ jobs:
     - name: Install fzf
       if: steps.cache-fzf.outputs.cache-hit != 'true'
       run: |
+        rm -rf ~/.fzf
         git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
         ~/.fzf/install --bin
         
@@ -56,9 +89,21 @@ jobs:
         
     - name: Make scripts executable
       run: |
-        chmod +x run_tests.sh bookmarks.sh
-        chmod +x test_bookmarks.sh test_editor_features.sh test_frecency.sh test_special_chars.sh test_type_execution.sh
+        chmod +x run_tests.sh run_with_coverage.sh bookmarks.sh
+        chmod +x test_bookmarks.sh test_editor_features.sh test_frecency.sh test_special_chars.sh test_type_execution.sh test_composable_filters.sh
         
-    - name: Run all tests
+    - name: Run all tests with coverage
       run: |
-        ./run_tests.sh
+        ./run_tests.sh --coverage
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        directory: ./coverage
+        files: ./coverage/merged/cobertura.xml
+        flags: unittests
+        name: universal-bookmarks-coverage
+        fail_ci_if_error: false
+        verbose: true
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

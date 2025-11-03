@@ -1,5 +1,8 @@
 # Universal Bookmarks
 
+[![Tests](https://github.com/ahvth/universal_bookmark/actions/workflows/test.yml/badge.svg)](https://github.com/ahvth/universal_bookmark/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/ahvth/universal_bookmark/branch/main/graph/badge.svg)](https://codecov.io/gh/ahvth/universal_bookmark)
+
 Shell script to manage bookmarks in a JSON format. A bookmark can be anything from a URL to a script that you want to run frequently.
 
 Note: The content is mostly AI generated.
@@ -488,10 +491,32 @@ The test runner provides:
 ./run_tests.sh -v           # Verbose mode (show detailed output)
 ./run_tests.sh -q           # Quiet mode (summary only)
 ./run_tests.sh -f           # Fail-fast mode (stop on first failure)
+./run_tests.sh -c           # Run with code coverage collection
+./run_tests.sh --coverage   # Same as -c (requires kcov)
 ./run_tests.sh --list       # List available test suites
 ./run_tests.sh frecency     # Run only tests matching 'frecency'
 ./run_tests.sh --help       # Show help message
 ```
+
+### Code Coverage
+
+The project supports code coverage reporting using `kcov`. To generate coverage reports:
+
+```bash
+# Install kcov (Ubuntu/Debian)
+sudo apt-get install kcov
+
+# Run tests with coverage
+./run_tests.sh --coverage
+```
+
+This will:
+- Run all test suites with coverage instrumentation
+- Generate HTML coverage reports in `./coverage/merged/index.html`
+- Generate Cobertura XML for CI integration
+- Display coverage percentage in the test summary
+
+Coverage reports are automatically generated and uploaded to [Codecov](https://codecov.io/gh/ahvth/universal_bookmark) in the CI pipeline.
 
 ### Individual Test Suites
 
