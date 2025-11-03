@@ -358,12 +358,16 @@ main() {
         fi
         
         # Filter out test_precommit_hooks.sh to avoid recursive coverage issues
+        # We skip it entirely in coverage mode (both coverage and normal test phases)
         local coverage_tests=()
         for test in "${tests_to_run[@]}"; do
             if [ "$test" != "test_precommit_hooks.sh" ]; then
                 coverage_tests+=("$test")
             fi
         done
+        
+        # Update tests_to_run to exclude test_precommit_hooks.sh for the normal test phase too
+        tests_to_run=("${coverage_tests[@]}")
         
         # Run coverage wrapper with filtered test files
         "$SCRIPT_DIR/run_with_coverage.sh" "${coverage_tests[@]}"
