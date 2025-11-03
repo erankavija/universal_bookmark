@@ -357,8 +357,16 @@ main() {
             chmod +x "$SCRIPT_DIR/run_with_coverage.sh"
         fi
         
-        # Run coverage wrapper with test files
-        "$SCRIPT_DIR/run_with_coverage.sh" "${tests_to_run[@]}"
+        # Filter out test_precommit_hooks.sh to avoid recursive coverage issues
+        local coverage_tests=()
+        for test in "${tests_to_run[@]}"; do
+            if [ "$test" != "test_precommit_hooks.sh" ]; then
+                coverage_tests+=("$test")
+            fi
+        done
+        
+        # Run coverage wrapper with filtered test files
+        "$SCRIPT_DIR/run_with_coverage.sh" "${coverage_tests[@]}"
         local coverage_exit_code=$?
         
         # Warn if coverage collection failed, but continue with tests
