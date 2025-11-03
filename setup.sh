@@ -394,6 +394,50 @@ fi
 # Install autocompletion
 install_autocompletion
 
+# Install git hooks (if in a git repository)
+install_git_hooks() {
+    # Check if we're in a git repository
+    if ! git -C "$SCRIPT_DIR" rev-parse --git-dir > /dev/null 2>&1; then
+        echo -e "${YELLOW}Not a git repository. Skipping git hooks installation.${NC}"
+        return
+    fi
+    
+    # Check if .githooks directory exists
+    if [ ! -d "$SCRIPT_DIR/.githooks" ]; then
+        echo -e "${YELLOW}.githooks directory not found. Skipping git hooks installation.${NC}"
+        return
+    fi
+    
+    echo ""
+    echo -e "${CYAN}=== Git Hooks Installation ===${NC}"
+    echo ""
+    echo -e "Universal Bookmarks includes a pre-commit hook that automatically"
+    echo -e "runs tests on changed files before committing. This helps catch"
+    echo -e "issues early and reduces CI failures."
+    echo ""
+    echo -e "${YELLOW}Benefits:${NC}"
+    echo -e "  - Automatic testing before commits"
+    echo -e "  - Fast fail-fast mode for quick feedback"
+    echo -e "  - Only tests changed files"
+    echo -e "  - Can be bypassed with 'git commit --no-verify'"
+    echo ""
+    
+    read -p "Install git hooks for automatic testing? [y/N] " response
+    if [[ "$response" =~ ^[Yy]$ ]]; then
+        # Configure git to use .githooks directory
+        git -C "$SCRIPT_DIR" config core.hooksPath .githooks
+        echo -e "${GREEN}Git hooks installed successfully!${NC}"
+        echo -e "${CYAN}Pre-commit tests will now run automatically on commits.${NC}"
+        echo -e "${YELLOW}Tip: Use 'git commit --no-verify' to skip the hook if needed.${NC}"
+    else
+        echo -e "${YELLOW}Git hooks not installed. You can install them later by running:${NC}"
+        echo -e "  cd $SCRIPT_DIR && git config core.hooksPath .githooks"
+    fi
+}
+
+install_git_hooks
+
+echo ""
 echo -e "${GREEN}Universal Bookmarks setup completed!${NC}"
 echo -e "${BLUE}Directory:${NC} $HOME/.bookmarks"
 echo -e "${BLUE}Bookmarks file:${NC} $HOME/.bookmarks/bookmarks.json"

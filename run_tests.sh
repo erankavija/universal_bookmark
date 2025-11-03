@@ -30,6 +30,7 @@ TEST_FILES=(
     "test_special_chars.sh"
     "test_type_execution.sh"
     "test_composable_filters.sh"
+    "test_precommit_hooks.sh"
 )
 
 # Global counters
@@ -58,6 +59,7 @@ ${BOLD}OPTIONS:${NC}
     -f, --fail-fast     Stop on first test failure
     -l, --list          List available test suites
     -c, --coverage      Run tests with code coverage collection (requires kcov)
+    --hook              Run in git hook mode (quiet + fail-fast, minimal output)
     --parallel          Run tests in parallel (not yet implemented)
     
 ${BOLD}TEST_PATTERN:${NC}
@@ -286,6 +288,11 @@ main() {
             -l|--list)
                 list_test_suites
                 exit 0
+                ;;
+            --hook)
+                quiet=true
+                fail_fast=true
+                shift
                 ;;
             -p|--parallel)
                 echo -e "${YELLOW}Note: Parallel execution is not yet implemented. See Issue #2 in ISSUES_TO_CREATE.md${NC}"

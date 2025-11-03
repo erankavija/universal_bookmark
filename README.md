@@ -546,6 +546,65 @@ All test suites create a temporary environment, test their respective functions,
 
 ## Development
 
+### Pre-commit Hooks for Testing
+
+Universal Bookmarks includes git pre-commit hooks that automatically run tests on changed files before commits. This helps catch issues early and reduces CI failures.
+
+#### Installation
+
+The pre-commit hooks are installed automatically when you run the setup script:
+
+```bash
+./setup.sh
+```
+
+The setup script will ask if you want to install the git hooks. If you choose yes, it will configure git to use the `.githooks` directory.
+
+#### Manual Installation
+
+If you skipped the automatic installation or want to install the hooks later:
+
+```bash
+cd /path/to/universal_bookmark
+git config core.hooksPath .githooks
+```
+
+#### How It Works
+
+When you commit changes to shell script files (`.sh`), the pre-commit hook will:
+
+1. Detect which shell scripts have been modified
+2. Run the test suite in fail-fast mode (`./run_tests.sh --hook`)
+3. Allow the commit if all tests pass
+4. Block the commit if any tests fail
+
+**Benefits:**
+- Catch test failures before pushing
+- Encourage test-driven development
+- Reduce CI failures
+- Faster development feedback
+
+**Bypassing the Hook:**
+
+If you need to commit without running tests (e.g., work in progress), you can bypass the hook:
+
+```bash
+git commit --no-verify -m "WIP: work in progress"
+```
+
+#### Hook Mode
+
+The test runner includes a special `--hook` mode optimized for git hooks:
+
+```bash
+./run_tests.sh --hook
+```
+
+This mode:
+- Runs in quiet mode (minimal output)
+- Uses fail-fast (stops on first failure)
+- Provides quick feedback for pre-commit checks
+
 ### GitHub Copilot Custom Agents
 
 This project includes custom GitHub Copilot agents that provide specialized expertise for different aspects of development. These agents are configured in `.github/agents.yml` and located in `.github/agents/`:
