@@ -9,9 +9,22 @@ The Universal Bookmarks project uses `kcov` for code coverage reporting. This do
 ### Installing kcov
 
 **Ubuntu/Debian:**
+
+kcov is not available in default Ubuntu repositories. You need to build from source:
+
 ```bash
+# Install build dependencies
 sudo apt-get update
-sudo apt-get install kcov
+sudo apt-get install -y cmake g++ pkg-config libcurl4-openssl-dev libelf-dev libdw-dev binutils-dev libiberty-dev
+
+# Clone and build kcov
+git clone --depth 1 --branch v43 https://github.com/SimonKagstrom/kcov.git
+cd kcov
+mkdir build
+cd build
+cmake ..
+make
+sudo make install
 ```
 
 **macOS:**
@@ -19,7 +32,7 @@ sudo apt-get install kcov
 brew install kcov
 ```
 
-**Build from Source:**
+**Alternative - Build from Source (any platform):**
 ```bash
 git clone https://github.com/SimonKagstrom/kcov.git
 cd kcov

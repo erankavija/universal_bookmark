@@ -28,7 +28,39 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y jq kcov
+        sudo apt-get install -y jq
+        
+    - name: Cache kcov
+      uses: actions/cache@v3
+      id: cache-kcov
+      with:
+        path: ~/kcov
+        key: ${{ runner.os }}-kcov-v43-${{ hashFiles('.github/workflows/test.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-kcov-v43-
+          
+    - name: Build and install kcov
+      if: steps.cache-kcov.outputs.cache-hit != 'true'
+      run: |
+        sudo apt-get install -y cmake g++ pkg-config libcurl4-openssl-dev libelf-dev libdw-dev binutils-dev libiberty-dev
+        git clone --depth 1 --branch v43 https://github.com/SimonKagstrom/kcov.git ~/kcov-src
+        cd ~/kcov-src
+        mkdir build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=$HOME/kcov ..
+        make
+        make install
+        
+    - name: Add kcov to PATH
+      run: |
+        echo "$HOME/kcov/bin" >> $GITHUB_PATH
+        if [ -f "$HOME/kcov/bin/kcov" ]; then
+          echo "kcov installed successfully"
+          $HOME/kcov/bin/kcov --version
+        else
+          echo "Error: kcov binary not found" >&2
+          exit 1
+        fi
       
     - name: Cache fzf
       uses: actions/cache@v3
