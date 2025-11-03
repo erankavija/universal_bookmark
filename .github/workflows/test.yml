@@ -42,27 +42,23 @@ jobs:
     - name: Build and install kcov
       if: steps.cache-kcov.outputs.cache-hit != 'true'
       run: |
-        set -e
-        sudo apt-get install -y cmake g++ pkg-config libcurl4-openssl-dev libelf-dev libdw-dev binutils-dev libiberty-dev zlib1g-dev
+        sudo apt-get install -y cmake g++ pkg-config libcurl4-openssl-dev libelf-dev libdw-dev binutils-dev libiberty-dev
         git clone --depth 1 --branch v43 https://github.com/SimonKagstrom/kcov.git ~/kcov-src
         cd ~/kcov-src
         mkdir build
         cd build
         cmake -DCMAKE_INSTALL_PREFIX=$HOME/kcov ..
-        make -j$(nproc)
+        make
         make install
-        ls -la $HOME/kcov/bin/
-        $HOME/kcov/bin/kcov --version
         
     - name: Add kcov to PATH
       run: |
         echo "$HOME/kcov/bin" >> $GITHUB_PATH
         if [ -f "$HOME/kcov/bin/kcov" ]; then
-          echo "kcov is available"
+          echo "kcov installed successfully"
           $HOME/kcov/bin/kcov --version
         else
-          echo "Error: kcov binary not found at $HOME/kcov/bin/kcov" >&2
-          ls -la $HOME/kcov/ || echo "kcov directory not found"
+          echo "Error: kcov binary not found" >&2
           exit 1
         fi
       
@@ -78,6 +74,7 @@ jobs:
     - name: Install fzf
       if: steps.cache-fzf.outputs.cache-hit != 'true'
       run: |
+        rm -rf ~/.fzf
         git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
         ~/.fzf/install --bin
         
