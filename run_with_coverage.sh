@@ -53,7 +53,7 @@ run_test_with_coverage() {
     # --exclude-pattern to ignore system files and test framework
     # --bash-dont-parse-binary-dir to avoid parsing system binaries
     kcov \
-        --exclude-pattern=/usr/,/tmp/,test_framework.sh \
+        --exclude-pattern=/usr/,/tmp/,test_framework.sh,test_precommit_hooks.sh \
         --bash-dont-parse-binary-dir \
         "$output_dir" \
         "${SCRIPT_DIR}/${test_file}" 2>&1 || {
