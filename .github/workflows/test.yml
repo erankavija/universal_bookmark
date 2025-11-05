@@ -89,18 +89,19 @@ jobs:
         
     - name: Make scripts executable
       run: |
-        chmod +x run_tests.sh run_with_coverage.sh bookmarks.sh
-        chmod +x test_bookmarks.sh test_editor_features.sh test_frecency.sh test_special_chars.sh test_type_execution.sh test_composable_filters.sh
+        chmod +x bookmarks.sh
+        chmod +x tests/run_tests.sh tests/run_with_coverage.sh
+        chmod +x tests/test_bookmarks.sh tests/test_editor_features.sh tests/test_frecency.sh tests/test_special_chars.sh tests/test_type_execution.sh tests/test_composable_filters.sh
         
     - name: Run all tests with coverage
       run: |
-        ./run_tests.sh --coverage
+        cd tests && ./run_tests.sh --coverage
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
-        directory: ./coverage
-        files: ./coverage/merged/cobertura.xml
+        directory: ./tests/coverage
+        files: ./tests/coverage/merged/cobertura.xml
         flags: unittests
         name: universal-bookmarks-coverage
         fail_ci_if_error: false

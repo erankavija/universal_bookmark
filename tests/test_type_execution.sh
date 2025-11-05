@@ -17,48 +17,48 @@ run_test_suite() {
     
     # Test script type (direct execution)
     run_test "Add script bookmark" \
-        "./bookmarks.sh add 'Test Script' script 'echo \"Script executed\"' 'test'"
+        "../bookmarks.sh add 'Test Script' script 'echo \"Script executed\"' 'test'"
     
     # Test cmd type (direct execution)
     run_test "Add cmd bookmark" \
-        "./bookmarks.sh add 'Test Command' cmd 'echo \"Command executed\"' 'test'"
+        "../bookmarks.sh add 'Test Command' cmd 'echo \"Command executed\"' 'test'"
     
     # Test ssh type (direct execution - will fail to connect but should try)
     run_test "Add ssh bookmark" \
-        "./bookmarks.sh add 'Test SSH' ssh 'echo \"SSH would connect here\"' 'test'"
+        "../bookmarks.sh add 'Test SSH' ssh 'echo \"SSH would connect here\"' 'test'"
     
     # Test app type (direct execution)
     run_test "Add app bookmark" \
-        "./bookmarks.sh add 'Test App' app 'echo \"App launched\"' 'test'"
+        "../bookmarks.sh add 'Test App' app 'echo \"App launched\"' 'test'"
     
     # Test custom type (direct execution)
     run_test "Add custom bookmark" \
-        "./bookmarks.sh add 'Test Custom' custom 'echo \"Custom executed\"' 'test'"
+        "../bookmarks.sh add 'Test Custom' custom 'echo \"Custom executed\"' 'test'"
     
     # Test url type (should use xdg-open or equivalent)
     # Note: We can't actually open a browser in test, but we can verify the command construction
     run_test "Add url bookmark" \
-        "./bookmarks.sh add 'Test URL' url '\"https://example.com\"' 'test'"
+        "../bookmarks.sh add 'Test URL' url '\"https://example.com\"' 'test'"
     
     # Test pdf type (should use xdg-open or equivalent)
     run_test "Add pdf bookmark" \
-        "./bookmarks.sh add 'Test PDF' pdf '\"$TEST_DIR/files/test.pdf\"' 'test'"
+        "../bookmarks.sh add 'Test PDF' pdf '\"$TEST_DIR/files/test.pdf\"' 'test'"
     
     # Test file type (should use xdg-open or equivalent)
     run_test "Add file bookmark" \
-        "./bookmarks.sh add 'Test File' file '\"$TEST_DIR/files/test.txt\"' 'test'"
+        "../bookmarks.sh add 'Test File' file '\"$TEST_DIR/files/test.txt\"' 'test'"
     
     # Test folder type (should use xdg-open or equivalent)
     run_test "Add folder bookmark" \
-        "./bookmarks.sh add 'Test Folder' folder '\"$TEST_DIR/files\"' 'test'"
+        "../bookmarks.sh add 'Test Folder' folder '\"$TEST_DIR/files\"' 'test'"
     
     # Test note type (should use appropriate viewer)
     run_test "Add note bookmark" \
-        "./bookmarks.sh add 'Test Note' note '\"$TEST_DIR/files/test.txt\"' 'test'"
+        "../bookmarks.sh add 'Test Note' note '\"$TEST_DIR/files/test.txt\"' 'test'"
     
     # Test edit type (should use BOOKMARKS_EDITOR or EDITOR)
     run_test "Add edit bookmark" \
-        "./bookmarks.sh add 'Test Edit' edit '\"$TEST_DIR/files/test.txt\"' 'test'"
+        "../bookmarks.sh add 'Test Edit' edit '\"$TEST_DIR/files/test.txt\"' 'test'"
     
     # Verify bookmarks were added correctly
     echo -e "${BLUE}Verifying bookmark types...${NC}"
@@ -82,7 +82,7 @@ run_test_suite() {
     echo -e "${BLUE}Testing type-aware execution output...${NC}"
     
     # Create a simple test by checking that the Type field is shown in output
-    local output=$(./bookmarks.sh tag 'test' 2>&1)
+    local output=$(../bookmarks.sh tag 'test' 2>&1)
     if echo "$output" | grep -q "script"; then
         echo -e "${GREEN}✓ Script type bookmarks displayed correctly${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))

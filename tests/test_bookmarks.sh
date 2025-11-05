@@ -13,15 +13,15 @@ run_test_suite() {
     
     # Test adding a bookmark
     run_test "Add URL bookmark" \
-        "./bookmarks.sh add 'Test URL' url 'echo \"This is a URL test\"'"
+        "../bookmarks.sh add 'Test URL' url 'echo \"This is a URL test\"'"
     
     # Test adding another bookmark
     run_test "Add script bookmark" \
-        "./bookmarks.sh add 'Test Script' script 'echo \"This is a script test\"' 'test automation' 'Test notes'"
+        "../bookmarks.sh add 'Test Script' script 'echo \"This is a script test\"' 'test automation' 'Test notes'"
     
     # Test listing bookmarks
     run_test "List all bookmarks" \
-        "./bookmarks.sh list"
+        "../bookmarks.sh list"
     
     # Test the new list output format
     echo -e "${BLUE}Testing new list output format...${NC}"
@@ -39,7 +39,7 @@ run_test_suite() {
     # - [0-9]+_[a-zA-Z0-9]+ : ID format (timestamp_randomstring)
     # - \|             : Pipe separator
     # - .*             : Tags (optional, can be empty)
-    local list_output=$(./bookmarks.sh list)
+    local list_output=$(../bookmarks.sh list)
     if echo "$list_output" | grep -qE '^\[[a-z]+\] [^|]+ \| [^|]+ \| (active|obsolete) \| [0-9]+_[a-zA-Z0-9]+ \| .*$'; then
         echo -e "${GREEN}✓ Test passed: List output has correct format${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -51,7 +51,7 @@ run_test_suite() {
     fi
     
     # Test that list output is parseable with grep
-    if ./bookmarks.sh list | grep -q '\[url\]'; then
+    if ../bookmarks.sh list | grep -q '\[url\]'; then
         echo -e "${GREEN}✓ Test passed: List output is grep-able${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         TOTAL_TESTS=$((TOTAL_TESTS + 1))
@@ -62,7 +62,7 @@ run_test_suite() {
     fi
     
     # Test that list output is parseable with awk to extract commands
-    local extracted_command=$(./bookmarks.sh list | head -1 | awk -F' [|] ' '{print $2}')
+    local extracted_command=$(../bookmarks.sh list | head -1 | awk -F' [|] ' '{print $2}')
     if [ -n "$extracted_command" ]; then
         echo -e "${GREEN}✓ Test passed: Commands extractable with awk${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -74,7 +74,7 @@ run_test_suite() {
     fi
     
     # Test that piped output has no ANSI color codes
-    local piped_output=$(./bookmarks.sh list | cat)
+    local piped_output=$(../bookmarks.sh list | cat)
     if echo "$piped_output" | grep -qE '\x1B\[[0-9;]*[mK]'; then
         echo -e "${RED}✗ Test failed: Piped output contains ANSI codes${NC}"
         TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -92,29 +92,29 @@ run_test_suite() {
     
     # Test updating a bookmark
     run_test "Update a bookmark" \
-        "./bookmarks.sh update 'Test URL' url 'echo \"This is an updated URL test\"' 'updated test'"
+        "../bookmarks.sh update 'Test URL' url 'echo \"This is an updated URL test\"' 'updated test'"
     
     # Test tag search
     run_test "Search by tag" \
-        "./bookmarks.sh tag 'test'"
+        "../bookmarks.sh tag 'test'"
     
     # Test marking a bookmark as obsolete
     run_test "Mark bookmark as obsolete" \
-        "./bookmarks.sh -y obsolete 'Test Script'"
+        "../bookmarks.sh -y obsolete 'Test Script'"
     
     # Test backup creation
     run_test "Create backup" \
-        "./bookmarks.sh -y backup"
+        "../bookmarks.sh -y backup"
     
     # Test deleting a bookmark
     run_test "Delete a bookmark" \
-        "./bookmarks.sh -y delete 'Test URL'"
+        "../bookmarks.sh -y delete 'Test URL'"
     
     # Test jq command extraction with fzf filter
     echo -e "${BLUE}Testing jq command extraction with fzf filter...${NC}"
     run_test "Add test bookmarks for jq extraction" \
-        "./bookmarks.sh add 'List Files' script 'ls -la' 'test,files' 'List all files' && \
-         ./bookmarks.sh add 'Echo Test' script 'echo \"Hello World\"' 'test,echo' 'Echo test message'"
+        "../bookmarks.sh add 'List Files' script 'ls -la' 'test,files' 'List all files' && \
+         ../bookmarks.sh add 'Echo Test' script 'echo \"Hello World\"' 'test,echo' 'Echo test message'"
     
     # Test formatting bookmarks for fzf
     run_test "Format bookmarks for fzf display" \
@@ -146,7 +146,7 @@ run_test_suite() {
     
     # Test with OBSOLETE marker
     run_test "Mark bookmark as obsolete for jq test" \
-        "./bookmarks.sh -y obsolete 'List Files'"
+        "../bookmarks.sh -y obsolete 'List Files'"
     
     # Test extraction with obsolete bookmark
     local obsolete_formatted_line="[OBSOLETE] [script] List Files"
@@ -186,7 +186,7 @@ run_test_suite() {
         echo "echo 'Interactive test'"
         echo "interactive test"
         echo "This is an interactive test"
-    } | ./bookmarks.sh add > /dev/null 2>&1
+    } | ../bookmarks.sh add > /dev/null 2>&1
     
     # Verify the bookmark was added
     local interactive_bookmark=$(jq -r '.bookmarks[] | select(.description == "Interactive Test Bookmark") | .command' "$TEST_BOOKMARKS_FILE")
@@ -212,7 +212,7 @@ run_test_suite() {
         echo "echo 'Custom type test'"
         echo ""
         echo ""
-    } | ./bookmarks.sh add > /dev/null 2>&1
+    } | ../bookmarks.sh add > /dev/null 2>&1
     
     # Verify the bookmark was added with custom type
     local custom_type_bookmark=$(jq -r '.bookmarks[] | select(.description == "Custom Type Test") | .type' "$TEST_BOOKMARKS_FILE")
@@ -230,7 +230,7 @@ run_test_suite() {
     # Test fzf selection for edit command (now uses editor)
     echo -e "${BLUE}Testing edit command with editor...${NC}"
     # Add a test bookmark first
-    ./bookmarks.sh add "Edit Test Bookmark" script "echo 'Edit test'" "edit test" > /dev/null 2>&1
+    ../bookmarks.sh add "Edit Test Bookmark" script "echo 'Edit test'" "edit test" > /dev/null 2>&1
     
     # Create a mock editor for the test
     local mock_editor=$(mktemp)
@@ -256,7 +256,7 @@ EDITEOF
     
     # Set the mock editor and run edit
     export EDITOR="$mock_editor"
-    ./bookmarks.sh edit "Edit Test Bookmark" > /dev/null 2>&1
+    ../bookmarks.sh edit "Edit Test Bookmark" > /dev/null 2>&1
     unset EDITOR
     rm -f "$mock_editor"
     
@@ -277,8 +277,8 @@ EDITEOF
     
     # Test fzf selection for delete command (using filter mode to simulate selection)
     echo -e "${BLUE}Testing delete command with direct argument...${NC}"
-    ./bookmarks.sh add "Delete Test Bookmark" script "echo 'Delete test'" > /dev/null 2>&1
-    ./bookmarks.sh -y delete "Delete Test Bookmark" > /dev/null 2>&1
+    ../bookmarks.sh add "Delete Test Bookmark" script "echo 'Delete test'" > /dev/null 2>&1
+    ../bookmarks.sh -y delete "Delete Test Bookmark" > /dev/null 2>&1
     
     # Verify the bookmark was deleted
     local delete_check=$(jq -r '.bookmarks[] | select(.description == "Delete Test Bookmark") | .description' "$TEST_BOOKMARKS_FILE")
@@ -295,8 +295,8 @@ EDITEOF
     
     # Test fzf selection for obsolete command
     echo -e "${BLUE}Testing obsolete command with direct argument...${NC}"
-    ./bookmarks.sh add "Obsolete Test Bookmark" script "echo 'Obsolete test'" > /dev/null 2>&1
-    ./bookmarks.sh -y obsolete "Obsolete Test Bookmark" > /dev/null 2>&1
+    ../bookmarks.sh add "Obsolete Test Bookmark" script "echo 'Obsolete test'" > /dev/null 2>&1
+    ../bookmarks.sh -y obsolete "Obsolete Test Bookmark" > /dev/null 2>&1
     
     # Verify the bookmark was marked as obsolete
     local obsolete_status=$(jq -r '.bookmarks[] | select(.description == "Obsolete Test Bookmark") | .status' "$TEST_BOOKMARKS_FILE")
@@ -317,16 +317,16 @@ EDITEOF
     echo -e "${BLUE}Testing restore from backup with -y flag...${NC}"
     
     # First, create a backup
-    ./bookmarks.sh backup > /dev/null 2>&1
+    ../bookmarks.sh backup > /dev/null 2>&1
     
     # Modify the bookmarks file
-    ./bookmarks.sh add "Restore Test Bookmark" script "echo 'Before restore'" > /dev/null 2>&1
+    ../bookmarks.sh add "Restore Test Bookmark" script "echo 'Before restore'" > /dev/null 2>&1
     
     # Count bookmarks before restore
     local bookmarks_before_restore=$(jq '.bookmarks | length' "$TEST_BOOKMARKS_FILE")
     
     # Restore from backup using -y flag (should auto-select first backup and auto-confirm)
-    ./bookmarks.sh -y restore > /dev/null 2>&1
+    ../bookmarks.sh -y restore > /dev/null 2>&1
     
     # Count bookmarks after restore
     local bookmarks_after_restore=$(jq '.bookmarks | length' "$TEST_BOOKMARKS_FILE")
@@ -349,7 +349,7 @@ EDITEOF
     echo -e "${BLUE}Testing that commands can be called without arguments...${NC}"
     
     # Test edit without argument - should invoke fzf (we can't test interactive mode, but we can verify no error on validation)
-    ./bookmarks.sh add "FZF Test 1" script "echo 'FZF test 1'" > /dev/null 2>&1
+    ../bookmarks.sh add "FZF Test 1" script "echo 'FZF test 1'" > /dev/null 2>&1
     
     # When no argument is provided and stdin is not a terminal (like in tests),
     # fzf will fail but our function should handle it gracefully

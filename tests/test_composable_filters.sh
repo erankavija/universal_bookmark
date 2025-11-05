@@ -16,7 +16,7 @@ tests_failed=0
 
 # Path to bookmarks script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOOKMARKS_SCRIPT="$SCRIPT_DIR/bookmarks.sh"
+BOOKMARKS_SCRIPT="$SCRIPT_DIR/../bookmarks.sh"
 
 # Create initial bookmarks file
 echo '{"bookmarks":[]}' > "$BOOKMARKS_DIR/bookmarks.json"

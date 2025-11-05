@@ -1,7 +1,7 @@
 # Universal Bookmarks
 
-[![Tests](https://github.com/ahvth/universal_bookmark/actions/workflows/test.yml/badge.svg)](https://github.com/ahvth/universal_bookmark/actions/workflows/test.yml)
-[![codecov](https://codecov.io/gh/ahvth/universal_bookmark/branch/main/graph/badge.svg)](https://codecov.io/gh/ahvth/universal_bookmark)
+[![Tests](https://github.com/erankavija/universal_bookmark/actions/workflows/test.yml/badge.svg)](https://github.com/erankavija/universal_bookmark/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/erankavija/universal_bookmark/branch/main/graph/badge.svg)](https://codecov.io/gh/erankavija/universal_bookmark)
 
 Shell script to manage bookmarks in a JSON format. A bookmark can be anything from a URL to a script that you want to run frequently.
 
@@ -465,84 +465,40 @@ Universal Bookmarks includes built-in backup functionality:
 
 ## Testing
 
-Universal Bookmarks comes with comprehensive test suites to verify functionality. This is helpful for:
-- Confirming all features work after making changes
-- Verifying your installation is working correctly
-- Understanding the capabilities of the system
+Universal Bookmarks comes with comprehensive test suites to verify functionality and ensure code quality.
 
 ### Quick Start
 
-Run all tests with the convenience test runner:
+Run all tests:
 ```bash
+cd tests
 ./run_tests.sh
 ```
 
-The test runner provides:
-- Aggregated test results and summary
-- Colored, formatted output
-- Options for verbose, quiet, and fail-fast modes
-- Ability to run specific test suites
-- Dependency checking
-
-### Test Runner Options
-
+Run specific tests:
 ```bash
-./run_tests.sh              # Run all tests
-./run_tests.sh -v           # Verbose mode (show detailed output)
-./run_tests.sh -q           # Quiet mode (summary only)
-./run_tests.sh -f           # Fail-fast mode (stop on first failure)
-./run_tests.sh -c           # Run with code coverage collection
-./run_tests.sh --coverage   # Same as -c (requires kcov)
-./run_tests.sh --list       # List available test suites
-./run_tests.sh frecency     # Run only tests matching 'frecency'
-./run_tests.sh --help       # Show help message
+./run_tests.sh frecency     # Run only frecency tests
+./run_tests.sh -v           # Verbose mode
+./run_tests.sh --coverage   # Generate code coverage report
 ```
+
+### Test Suites
+
+The project includes specialized test suites for:
+- Core functionality (add, edit, delete, list)
+- Frecency-based sorting
+- Editor integration
+- Special character handling
+- Type-specific execution
+- Composable filter pipelines
 
 ### Code Coverage
 
-The project supports code coverage reporting using `kcov`. To generate coverage reports:
+Coverage reports are automatically generated in CI and uploaded to [Codecov](https://codecov.io/gh/erankavija/universal_bookmark).
 
-```bash
-# Install kcov (Ubuntu/Debian)
-sudo apt-get install kcov
+### For Contributors
 
-# Run tests with coverage
-./run_tests.sh --coverage
-```
-
-This will:
-- Run all test suites with coverage instrumentation
-- Generate HTML coverage reports in `./coverage/merged/index.html`
-- Generate Cobertura XML for CI integration
-- Display coverage percentage in the test summary
-
-Coverage reports are automatically generated and uploaded to [Codecov](https://codecov.io/gh/ahvth/universal_bookmark) in the CI pipeline.
-
-### Individual Test Suites
-
-The project includes multiple specialized test suites that can also be run individually:
-
-**Main Test Suite (`test_bookmarks.sh`):**
-Tests core functionality including adding, editing, updating, deleting bookmarks, and basic operations.
-
-**Frecency Tests (`test_frecency.sh`):**
-Tests the frecency (frequency + recency) scoring system that automatically prioritizes your most-used bookmarks.
-
-**Editor Features Tests (`test_editor_features.sh`):**
-Tests the editor-based bookmark editing functionality, including the `edit` and `modify-add` commands.
-
-**Special Characters Tests (`test_special_chars.sh`):**
-Tests handling of special characters in bookmark descriptions, commands, tags, and notes to ensure robustness.
-
-**Type Execution Tests (`test_type_execution.sh`):**
-Tests type-specific execution logic for different bookmark types (url, pdf, script, ssh, etc.).
-
-**Run individual test:**
-```bash
-./test_bookmarks.sh         # Run a specific test suite
-```
-
-All test suites create a temporary environment, test their respective functions, and clean up after themselves. The test framework is modular and can be extended with new test suites as needed.
+Detailed information about writing tests, test framework functions, and best practices is available in the [Testing Guide](tests/TESTING.md).
 
 ## Development
 

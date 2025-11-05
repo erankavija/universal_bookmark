@@ -33,7 +33,7 @@ run_test_suite() {
     # Test 1: Add bookmark with underscore in description
     echo -e "${BLUE}=== Test 1: Underscore in description ===${NC}"
     run_test "Add bookmark with underscore" \
-        "./bookmarks.sh add 'Test_with_underscore' url 'https://example.com'"
+        "../bookmarks.sh add 'Test_with_underscore' url 'https://example.com'"
     
     if test_bookmark_exists "Test_with_underscore"; then
         echo -e "${GREEN}✓ Bookmark with underscore was added successfully${NC}"
@@ -46,7 +46,7 @@ run_test_suite() {
     
     # Test 2: Delete bookmark with underscore
     run_test "Delete bookmark with underscore" \
-        "./bookmarks.sh -y delete 'Test_with_underscore'"
+        "../bookmarks.sh -y delete 'Test_with_underscore'"
     
     if ! test_bookmark_exists "Test_with_underscore"; then
         echo -e "${GREEN}✓ Bookmark with underscore was deleted successfully${NC}"
@@ -61,7 +61,7 @@ run_test_suite() {
     # Test 3: Add bookmark with emoji in description
     echo -e "${BLUE}=== Test 2: Emoji in description ===${NC}"
     run_test "Add bookmark with emoji" \
-        "./bookmarks.sh add 'Test with emoji 😀 🎉' cmd 'echo hello'"
+        "../bookmarks.sh add 'Test with emoji 😀 🎉' cmd 'echo hello'"
     
     if test_bookmark_exists "Test with emoji 😀 🎉"; then
         echo -e "${GREEN}✓ Bookmark with emoji was added successfully${NC}"
@@ -74,7 +74,7 @@ run_test_suite() {
     
     # Test 4: Mark obsolete bookmark with emoji
     run_test "Mark obsolete bookmark with emoji" \
-        "./bookmarks.sh -y obsolete 'Test with emoji 😀 🎉'"
+        "../bookmarks.sh -y obsolete 'Test with emoji 😀 🎉'"
     
     if test_bookmark_property "Test with emoji 😀 🎉" "status" "obsolete"; then
         echo -e "${GREEN}✓ Bookmark with emoji was marked obsolete${NC}"
@@ -89,7 +89,7 @@ run_test_suite() {
     # Test 5: Add bookmark with accented characters
     echo -e "${BLUE}=== Test 3: Accented characters ===${NC}"
     run_test "Add bookmark with accented chars" \
-        "./bookmarks.sh add 'Café résumé naïve' cmd 'echo test' 'tag' 'Notes: José María'"
+        "../bookmarks.sh add 'Café résumé naïve' cmd 'echo test' 'tag' 'Notes: José María'"
     
     if test_bookmark_exists "Café résumé naïve"; then
         echo -e "${GREEN}✓ Bookmark with accented characters was added${NC}"
@@ -102,7 +102,7 @@ run_test_suite() {
     
     # Test 6: Update bookmark with accented characters
     run_test "Update bookmark with accented chars" \
-        "./bookmarks.sh update 'Café résumé naïve' cmd 'echo updated' 'newtag' 'New notes: ñoño'"
+        "../bookmarks.sh update 'Café résumé naïve' cmd 'echo updated' 'newtag' 'New notes: ñoño'"
     
     if test_bookmark_property "Café résumé naïve" "notes" "New notes: ñoño"; then
         echo -e "${GREEN}✓ Bookmark with accented characters was updated${NC}"
@@ -117,7 +117,7 @@ run_test_suite() {
     # Test 7: Add bookmark with CJK characters
     echo -e "${BLUE}=== Test 4: CJK characters ===${NC}"
     run_test "Add bookmark with CJK chars" \
-        "./bookmarks.sh add '日本語 中文 한글' cmd 'echo hello' 'tag' '你好世界'"
+        "../bookmarks.sh add '日本語 中文 한글' cmd 'echo hello' 'tag' '你好世界'"
     
     if test_bookmark_exists "日本語 中文 한글"; then
         echo -e "${GREEN}✓ Bookmark with CJK characters was added${NC}"
@@ -132,7 +132,7 @@ run_test_suite() {
     # Test 8: Add bookmark with Arabic characters
     echo -e "${BLUE}=== Test 5: Arabic characters ===${NC}"
     run_test "Add bookmark with Arabic chars" \
-        "./bookmarks.sh add 'مرحبا بكم' cmd 'echo test' 'tag' 'Arabic: مرحبا'"
+        "../bookmarks.sh add 'مرحبا بكم' cmd 'echo test' 'tag' 'Arabic: مرحبا'"
     
     if test_bookmark_exists "مرحبا بكم"; then
         echo -e "${GREEN}✓ Bookmark with Arabic characters was added${NC}"
@@ -147,7 +147,7 @@ run_test_suite() {
     # Test 9: Add bookmark with multiple underscores
     echo -e "${BLUE}=== Test 6: Multiple underscores ===${NC}"
     run_test "Add bookmark with multiple underscores" \
-        "./bookmarks.sh add 'test_multiple_underscores_here' cmd 'echo test'"
+        "../bookmarks.sh add 'test_multiple_underscores_here' cmd 'echo test'"
     
     if test_bookmark_exists "test_multiple_underscores_here"; then
         echo -e "${GREEN}✓ Bookmark with multiple underscores was added${NC}"
@@ -160,7 +160,7 @@ run_test_suite() {
     
     # Test 10: Delete bookmark with multiple underscores
     run_test "Delete bookmark with multiple underscores" \
-        "./bookmarks.sh -y delete 'test_multiple_underscores_here'"
+        "../bookmarks.sh -y delete 'test_multiple_underscores_here'"
     
     if ! test_bookmark_exists "test_multiple_underscores_here"; then
         echo -e "${GREEN}✓ Bookmark with multiple underscores was deleted${NC}"
@@ -175,7 +175,7 @@ run_test_suite() {
     # Test 11: Combined special characters
     echo -e "${BLUE}=== Test 7: Combined special characters ===${NC}"
     run_test "Add bookmark with combined special chars" \
-        "./bookmarks.sh add 'Mix_of_everything: 😀 café 你好 مرحبا' cmd 'echo test' 'tag1 tag2' 'Notes: all_types_here é 🎉'"
+        "../bookmarks.sh add 'Mix_of_everything: 😀 café 你好 مرحبا' cmd 'echo test' 'tag1 tag2' 'Notes: all_types_here é 🎉'"
     
     if test_bookmark_exists "Mix_of_everything: 😀 café 你好 مرحبا"; then
         echo -e "${GREEN}✓ Bookmark with combined special characters was added${NC}"
@@ -188,7 +188,7 @@ run_test_suite() {
     
     # Test 12: Update with combined special characters
     run_test "Update bookmark with combined special chars" \
-        "./bookmarks.sh update 'Mix_of_everything: 😀 café 你好 مرحبا' cmd 'echo updated' 'new_tag' 'Updated: special_chars 🌟'"
+        "../bookmarks.sh update 'Mix_of_everything: 😀 café 你好 مرحبا' cmd 'echo updated' 'new_tag' 'Updated: special_chars 🌟'"
     
     if test_bookmark_property "Mix_of_everything: 😀 café 你好 مرحبا" "notes" "Updated: special_chars 🌟"; then
         echo -e "${GREEN}✓ Bookmark with combined special characters was updated${NC}"
@@ -207,7 +207,7 @@ run_test_suite() {
     
     if [[ -n "$test_id" ]] && [[ "$test_id" != "null" ]]; then
         run_test "Delete bookmark by ID" \
-            "./bookmarks.sh -y delete '$test_id'"
+            "../bookmarks.sh -y delete '$test_id'"
         
         # Check if bookmark was deleted
         local count
@@ -228,7 +228,7 @@ run_test_suite() {
     # Test 14: Verify that actual IDs are still recognized
     echo -e "${BLUE}=== Test 9: Real ID detection ===${NC}"
     run_test "Add bookmark to get real ID" \
-        "./bookmarks.sh add 'Test for ID' cmd 'echo test'"
+        "../bookmarks.sh add 'Test for ID' cmd 'echo test'"
     
     local real_id
     real_id=$(jq -r '.bookmarks[] | select(.description == "Test for ID") | .id' "$TEST_BOOKMARKS_FILE")
@@ -239,7 +239,7 @@ run_test_suite() {
         
         # Try to delete by ID
         run_test "Delete by real ID" \
-            "./bookmarks.sh -y delete '$real_id'"
+            "../bookmarks.sh -y delete '$real_id'"
         
         if ! test_bookmark_exists "Test for ID"; then
             echo -e "${GREEN}✓ Bookmark was deleted using real ID${NC}"

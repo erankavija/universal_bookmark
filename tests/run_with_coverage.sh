@@ -135,9 +135,9 @@ display_coverage_summary() {
         local branch_rate=$(xmllint --xpath "string(/coverage/@branch-rate)" "$merged_dir/cobertura.xml" 2>/dev/null || echo "0")
     else
         # Fallback to grep/sed (portable across systems)
-        # Pattern: [0-9]*\.?[0-9]* matches valid decimal numbers (e.g., 0.85, 1, 0.5)
-        local line_rate=$(grep 'line-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*line-rate="\([0-9]*\.*[0-9]*\)".*/\1/' || echo "0")
-        local branch_rate=$(grep 'branch-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*branch-rate="\([0-9]*\.*[0-9]*\)".*/\1/' || echo "0")
+        # Pattern matches valid decimal numbers: requires at least one digit
+        local line_rate=$(grep 'line-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*line-rate="\([0-9]\+\(\.\ [0-9]*\)\?\)".*/\1/' || echo "0")
+        local branch_rate=$(grep 'branch-rate=' "$merged_dir/cobertura.xml" | head -1 | sed 's/.*branch-rate="\([0-9]\+\(\.[0-9]*\)\?\)".*/\1/' || echo "0")
     fi
     
     # Convert to percentage
