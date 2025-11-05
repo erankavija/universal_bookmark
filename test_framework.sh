@@ -133,6 +133,12 @@ generate_json_report() {
     local suite_name="${1:-test-suite}"
     local output_file="${REPORT_DIR}/report-${suite_name}.json"
     
+    # Check if jq is available
+    if ! command -v jq &> /dev/null; then
+        echo "Warning: jq not found, skipping JSON report generation" >&2
+        return 1
+    fi
+    
     # Create report directory if needed
     mkdir -p "$REPORT_DIR"
     
@@ -473,21 +479,21 @@ provide_failure_hint() {
     local expected="$2"
     local test_name="$3"
     
-    echo -e "${PURPLE}  Hint:${NC}" >&2
+    echo -e "${PURPLE}  Hint:${NC}"
     
     # Generic hints based on exit code patterns
     if [ "$actual" -eq 1 ] && [ "$expected" -eq 0 ]; then
-        echo "    Check for error conditions or failed validations" >&2
+        echo "    Check for error conditions or failed validations"
     elif [ "$actual" -eq 0 ] && [ "$expected" -ne 0 ]; then
-        echo "    Command succeeded but was expected to fail - check input validation" >&2
+        echo "    Command succeeded but was expected to fail - check input validation"
     elif [ "$actual" -eq 127 ]; then
-        echo "    Command not found - check PATH or command spelling" >&2
+        echo "    Command not found - check PATH or command spelling"
     elif [ "$actual" -eq 126 ]; then
-        echo "    Permission denied - check file permissions" >&2
+        echo "    Permission denied - check file permissions"
     elif [ "$actual" -gt 128 ]; then
         local signal=$((actual - 128))
-        echo "    Process terminated by signal $signal" >&2
+        echo "    Process terminated by signal $signal"
     else
-        echo "    Review test command and expected behavior" >&2
+        echo "    Review test command and expected behavior"
     fi
 }
