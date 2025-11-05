@@ -13,7 +13,7 @@ run_test_suite() {
     
     # Test 1: New bookmarks have frecency fields
     run_test "New bookmarks have frecency fields" \
-        "./bookmarks.sh add 'Frecency Test 1' cmd 'echo test1' && \
+        "../bookmarks.sh add 'Frecency Test 1' cmd 'echo test1' && \
          jq -e '.bookmarks[0] | has(\"access_count\") and has(\"last_accessed\") and has(\"frecency_score\")' \$TEST_BOOKMARKS_FILE > /dev/null"
     
     # Test 2: New bookmarks start with zero frecency
@@ -30,8 +30,8 @@ run_test_suite() {
     
     # Add more bookmarks for sorting tests
     run_test "Add multiple test bookmarks" \
-        "./bookmarks.sh add 'Frecency Test 2' cmd 'echo test2' && \
-         ./bookmarks.sh add 'Frecency Test 3' cmd 'echo test3'"
+        "../bookmarks.sh add 'Frecency Test 2' cmd 'echo test2' && \
+         ../bookmarks.sh add 'Frecency Test 3' cmd 'echo test3'"
     
     # Test 5: Simulate bookmark access by manually updating statistics
     run_test "Manually update access statistics" \
@@ -73,7 +73,7 @@ run_test_suite() {
 OLDFORMAT
     
     run_test "Old bookmarks get migrated with frecency fields" \
-        "timeout 2 bash -c './bookmarks.sh 2>&1' || true && \
+        "timeout 2 bash -c '../bookmarks.sh 2>&1' || true && \
          jq -e '.bookmarks[0] | has(\"access_count\") and has(\"last_accessed\") and has(\"frecency_score\")' \$TEST_BOOKMARKS_FILE > /dev/null"
     
     # Test 9: Migrated bookmarks have default values
@@ -82,10 +82,10 @@ OLDFORMAT
     
     # Test 10: Test frecency calculation function
     run_test "Frecency calculation produces non-zero scores" \
-        "./bookmarks.sh add 'Calc Test' cmd 'echo calc' && \
+        "../bookmarks.sh add 'Calc Test' cmd 'echo calc' && \
          jq '.bookmarks[0] += {access_count: 3, last_accessed: \"2025-10-26 23:00:00\"}' \$TEST_BOOKMARKS_FILE > \$TEST_BOOKMARKS_FILE.tmp && \
          mv \$TEST_BOOKMARKS_FILE.tmp \$TEST_BOOKMARKS_FILE && \
-         timeout 2 bash -c './bookmarks.sh 2>&1' || true && \
+         timeout 2 bash -c '../bookmarks.sh 2>&1' || true && \
          score=\$(jq -r '.bookmarks[0].frecency_score' \$TEST_BOOKMARKS_FILE) && \
          [ \"\$score\" != 'null' ]"
     

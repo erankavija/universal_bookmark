@@ -17,7 +17,7 @@ test_format_bookmark_for_editor() {
     local test_output=$(mktemp)
     
     # Add a bookmark and then export it to see the format
-    ./bookmarks.sh add "Format Test" url "echo test" "tag1 tag2" "Some notes" > /dev/null 2>&1
+    ../bookmarks.sh add "Format Test" url "echo test" "tag1 tag2" "Some notes" > /dev/null 2>&1
     
     # Check if bookmark was added
     local bookmark_exists=$(jq -r '.bookmarks[] | select(.description == "Format Test") | .description' "$TEST_BOOKMARKS_FILE")
@@ -42,7 +42,7 @@ test_parse_bookmark_from_editor() {
     # We'll use a mock editor that we know works with the parse function
     
     # For now, just check that the function exists in the script
-    if grep -q "parse_bookmark_from_editor" ./bookmarks.sh; then
+    if grep -q "parse_bookmark_from_editor" ../bookmarks.sh; then
         echo -e "${GREEN}✓ Test passed: parse_bookmark_from_editor function exists${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
         return 0
@@ -59,7 +59,7 @@ test_edit_with_mock_editor() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     # Add a test bookmark
-    ./bookmarks.sh add "Edit Test" script "echo 'original'" "test" "original note" > /dev/null 2>&1
+    ../bookmarks.sh add "Edit Test" script "echo 'original'" "test" "original note" > /dev/null 2>&1
     
     # Create a mock editor script
     local mock_editor=$(mktemp)
@@ -79,7 +79,7 @@ EOF
     export EDITOR="$mock_editor"
     
     # Run edit command
-    ./bookmarks.sh edit "Edit Test" > /dev/null 2>&1
+    ../bookmarks.sh edit "Edit Test" > /dev/null 2>&1
     
     # Check if the bookmark was updated
     local updated_cmd=$(jq -r '.bookmarks[] | select(.description == "Edit Test") | .command' "$TEST_BOOKMARKS_FILE")
@@ -106,8 +106,8 @@ test_modify_add_with_mock_editor() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     # Just test that the function and command exist
-    if grep -q "modify_add_bookmark" ./bookmarks.sh && \
-       grep -q '"modify-add")' ./bookmarks.sh; then
+    if grep -q "modify_add_bookmark" ../bookmarks.sh && \
+       grep -q '"modify-add")' ../bookmarks.sh; then
         echo -e "${GREEN}✓ Test passed: modify-add function and command exist${NC}"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     else
@@ -123,7 +123,7 @@ test_help_includes_new_commands() {
     echo -e "${BLUE}Testing that help includes new commands...${NC}"
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
-    local help_output=$(./bookmarks.sh help)
+    local help_output=$(../bookmarks.sh help)
     
     if echo "$help_output" | grep -q "modify-add" && \
        echo "$help_output" | grep -q "EDITOR" && \
@@ -144,7 +144,7 @@ test_bookmarks_editor_priority() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     # Add a test bookmark
-    ./bookmarks.sh add "Priority Test" script "echo 'test'" > /dev/null 2>&1
+    ../bookmarks.sh add "Priority Test" script "echo 'test'" > /dev/null 2>&1
     
     # Create two mock editors
     local mock_editor1=$(mktemp)
@@ -174,7 +174,7 @@ EOF
     export BOOKMARKS_EDITOR="$mock_editor1"
     
     # Run edit
-    ./bookmarks.sh edit "Priority Test" > /dev/null 2>&1
+    ../bookmarks.sh edit "Priority Test" > /dev/null 2>&1
     
     # Check which editor was used
     local updated_cmd=$(jq -r '.bookmarks[] | select(.description == "Priority Test") | .command' "$TEST_BOOKMARKS_FILE")
@@ -202,7 +202,7 @@ test_multiline_content() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     # Add a bookmark with multiline command
-    ./bookmarks.sh add "Multiline Test" script "echo 'line1'" > /dev/null 2>&1
+    ../bookmarks.sh add "Multiline Test" script "echo 'line1'" > /dev/null 2>&1
     
     # Create a mock editor that adds multiline content
     local mock_editor=$(mktemp)
@@ -230,7 +230,7 @@ EOF
     export EDITOR="$mock_editor"
     
     # Run edit
-    ./bookmarks.sh edit "Multiline Test" > /dev/null 2>&1
+    ../bookmarks.sh edit "Multiline Test" > /dev/null 2>&1
     
     # Check the result
     local updated_cmd=$(jq -r '.bookmarks[] | select(.description == "Multiline Test") | .command' "$TEST_BOOKMARKS_FILE")
