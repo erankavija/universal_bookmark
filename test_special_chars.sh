@@ -266,9 +266,19 @@ run_test_suite() {
     
     if [ $TESTS_FAILED -eq 0 ]; then
         echo -e "${GREEN}All tests passed!${NC}"
-        return 0
     else
         echo -e "${RED}Some tests failed.${NC}"
+    fi
+    
+    # Generate reports if requested
+    if [ "${GENERATE_REPORTS:-false}" = "true" ]; then
+        echo ""
+        generate_all_reports "test_special_chars"
+    fi
+    
+    if [ $TESTS_FAILED -eq 0 ]; then
+        return 0
+    else
         return 1
     fi
 }

@@ -376,6 +376,7 @@ EDITEOF
     fi
     
     # Summary
+    echo ""
     echo -e "${BLUE}Test summary:${NC}"
     echo -e "  ${GREEN}Tests passed: $TESTS_PASSED${NC}"
     echo -e "  ${RED}Tests failed: $TESTS_FAILED${NC}"
@@ -383,9 +384,19 @@ EDITEOF
     
     if [ "$TESTS_FAILED" -eq 0 ]; then
         echo -e "${GREEN}All tests passed! 🎉${NC}"
-        return 0
     else
         echo -e "${RED}Some tests failed.${NC}"
+    fi
+    
+    # Generate reports if requested
+    if [ "${GENERATE_REPORTS:-false}" = "true" ]; then
+        echo ""
+        generate_all_reports "test_bookmarks"
+    fi
+    
+    if [ "$TESTS_FAILED" -eq 0 ]; then
+        return 0
+    else
         return 1
     fi
 }

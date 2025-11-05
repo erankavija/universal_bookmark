@@ -58,6 +58,7 @@ ${BOLD}OPTIONS:${NC}
     -f, --fail-fast     Stop on first test failure
     -l, --list          List available test suites
     -c, --coverage      Run tests with code coverage collection (requires kcov)
+    -r, --reports       Generate test reports (JUnit XML, HTML, JSON)
     --parallel          Run tests in parallel (not yet implemented)
     
 ${BOLD}TEST_PATTERN:${NC}
@@ -69,6 +70,7 @@ ${BOLD}EXAMPLES:${NC}
     $0 frecency         # Run only frecency tests
     $0 -f bookmarks     # Run bookmark tests, stop on first failure
     $0 --coverage       # Run all tests with coverage collection
+    $0 --reports        # Run all tests and generate reports
 
 ${BOLD}ENVIRONMENT:${NC}
     Set FZF_PATH if fzf is not in your PATH:
@@ -258,6 +260,7 @@ main() {
     local quiet=false
     local fail_fast=false
     local coverage=false
+    local reports=false
     local test_pattern=""
     
     # Parse arguments
@@ -283,6 +286,10 @@ main() {
                 coverage=true
                 shift
                 ;;
+            -r|--reports)
+                reports=true
+                shift
+                ;;
             -l|--list)
                 list_test_suites
                 exit 0
@@ -303,6 +310,11 @@ main() {
                 ;;
         esac
     done
+    
+    # Enable report generation if requested
+    if [ "$reports" = "true" ]; then
+        export GENERATE_REPORTS=true
+    fi
     
     # Print header
     if [ "$quiet" = "false" ]; then

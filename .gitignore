@@ -1,6 +1,9 @@
 # Test coverage reports
 coverage/
 
+# Test reports
+test-reports/
+
 # Temporary test directories
 test_*/
 

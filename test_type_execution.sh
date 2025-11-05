@@ -93,6 +93,7 @@ run_test_suite() {
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
     
     # Summary
+    echo ""
     echo -e "${BLUE}Test summary:${NC}"
     echo -e "  ${GREEN}Tests passed: $TESTS_PASSED${NC}"
     echo -e "  ${RED}Tests failed: $TESTS_FAILED${NC}"
@@ -100,9 +101,19 @@ run_test_suite() {
     
     if [ "$TESTS_FAILED" -eq 0 ]; then
         echo -e "${GREEN}All type-specific execution tests passed! 🎉${NC}"
-        return 0
     else
         echo -e "${RED}Some tests failed.${NC}"
+    fi
+    
+    # Generate reports if requested
+    if [ "${GENERATE_REPORTS:-false}" = "true" ]; then
+        echo ""
+        generate_all_reports "test_type_execution"
+    fi
+    
+    if [ "$TESTS_FAILED" -eq 0 ]; then
+        return 0
+    else
         return 1
     fi
 }

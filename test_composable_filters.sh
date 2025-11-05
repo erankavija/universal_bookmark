@@ -55,6 +55,16 @@ show_test_summary() {
     else
         echo "Some tests failed."
     fi
+    
+    # Generate reports if requested
+    if [ "${GENERATE_REPORTS:-false}" = "true" ]; then
+        # Convert to test framework format for reporting
+        TOTAL_TESTS=$((tests_passed + tests_failed))
+        TESTS_PASSED=$tests_passed
+        TESTS_FAILED=$tests_failed
+        echo ""
+        generate_all_reports "test_composable_filters"
+    fi
 }
 
 # Cleanup function
