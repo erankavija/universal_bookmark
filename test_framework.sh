@@ -352,6 +352,7 @@ generate_all_reports() {
 
 # Get current time in milliseconds (UNIX epoch)
 # Returns: milliseconds since epoch
+# Note: Fallback to seconds*1000 on systems without millisecond support
 get_time_ms() {
     date +%s%3N 2>/dev/null || echo $(($(date +%s) * 1000))
 }
@@ -381,12 +382,11 @@ is_slow_test() {
 #=============================================================================
 
 # Format test progress indicator
-# Args: $1 - current test number, $2 - total tests
+# Args: $1 - current test number
 # Returns: formatted progress string
 format_progress() {
     local current="$1"
-    local total="$2"
-    echo "[$current/$total]"
+    echo "[Test $current]"
 }
 
 # Format duration with slow test warning
@@ -418,7 +418,7 @@ run_test() {
     local current_test=$TOTAL_TESTS
     
     # Display progress and test name
-    local progress=$(format_progress "$current_test" "$TOTAL_TESTS")
+    local progress=$(format_progress "$current_test")
     echo -e "${BLUE}Running test: ${YELLOW}$test_name${NC} ${CYAN}$progress${NC}"
     
     # Capture start time

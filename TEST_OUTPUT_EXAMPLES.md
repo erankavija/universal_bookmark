@@ -9,23 +9,23 @@ This document showcases the enhanced test output features implemented for Univer
 ```bash
 $ ./test_demo_enhanced.sh
 
-Running test: Fast passing test [1/10]
+Running test: Fast passing test [Test 1]
 ✓ Fast passing test (0.10s)
 
-Running test: Quick validation test [2/10]
+Running test: Quick validation test [Test 2]
 ✓ Quick validation test (0.00s)
 
-Running test: Slow database query simulation [3/10]
+Running test: Slow database query simulation [Test 3]
 ✓ Slow database query simulation (1.50s) ⚠ SLOW
 
-Running test: Long-running integration test [4/10]
+Running test: Long-running integration test [Test 4]
 ✓ Long-running integration test (2.00s) ⚠ SLOW
 ```
 
 ### Test Failure with Context
 
 ```bash
-Running test: Invalid input handling [6/10]
+Running test: Invalid input handling [Test 6]
 ✗ Invalid input handling (0.00s)
   Expected: exit code 1
   Actual:   exit code 0
@@ -127,9 +127,9 @@ The HTML report includes:
 - Slow test warnings (⚠ SLOW) for tests > 1 second
 
 ### 2. Progress Indicators
-- Clear [current/total] count for each test
-- Helps track progress through long test suites
-- No surprises about how many tests remain
+- Test number shown for each test: `[Test 1]`, `[Test 2]`, etc.
+- Provides clear feedback during test execution
+- Sequential numbering tracks test progress
 
 ### 3. Improved Failure Output
 - Shows expected vs actual exit codes
@@ -164,7 +164,7 @@ $ ./run_tests.sh --reports
 Running test suite: test_bookmarks
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Running test: Add URL bookmark [1/25]
+Running test: Add URL bookmark [Test 1]
 ✓ Add URL bookmark (0.03s)
 ...
 

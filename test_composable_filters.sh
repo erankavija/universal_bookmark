@@ -2,6 +2,10 @@
 # Test suite for composable filter functions
 # These tests validate the UNIX-style filter pattern implementation
 
+# Source the shared test framework for report generation
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/test_framework.sh"
+
 # No set -e because we handle errors in run_test
 set -o pipefail
 
@@ -15,7 +19,6 @@ tests_passed=0
 tests_failed=0
 
 # Path to bookmarks script
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOOKMARKS_SCRIPT="$SCRIPT_DIR/bookmarks.sh"
 
 # Create initial bookmarks file

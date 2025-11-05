@@ -7,9 +7,6 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/test_framework.sh"
 
-# Override the TOTAL_TESTS to show proper progress from the start
-TOTAL_TESTS=10
-
 # Run demo test suite
 run_demo_suite() {
     echo -e "${BLUE}Demo Test Suite - Enhanced Output Features${NC}"
